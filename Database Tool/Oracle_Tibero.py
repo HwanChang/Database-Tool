@@ -1,4 +1,4 @@
-import Tkconstants, tkFileDialog, ttk, openpyxl, cx_Oracle
+import tkFileDialog, ttk, openpyxl, cx_Oracle
 from Tkinter import *
 from openpyxl.styles import Font
 

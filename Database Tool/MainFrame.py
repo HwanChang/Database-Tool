@@ -1,5 +1,5 @@
 from Tkinter import *
-import Tkconstants, tkFileDialog, ttk, openpyxl, Oracle_Tibero
+import tkFileDialog, ttk, openpyxl, Oracle_Tibero
 
 class MainFrame(Frame) :
 	def __init__(self, master) :
