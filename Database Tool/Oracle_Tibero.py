@@ -29,8 +29,8 @@ class Oracle_Tibero :
 		sheet = self.excel_document[name]
 
 		cl = []
-		kr = []
 		ty = []
+		le = []
 		nu = []
 		ky = []
 		SQL = ''
@@ -39,26 +39,26 @@ class Oracle_Tibero :
 
 		all_rows = sheet.rows
 		for row in all_rows :
-			if row[3].value is not None :
-				cl.append(row[1].value)
-				kr.append(row[2].value)
-				ty.append(row[3].value)
-				nu.append(row[4].value)
-				ky.append(row[5].value)
+			if row[1].value is not None :
+				cl.append(row[0].value)
+				ty.append(row[1].value)
+				le.append(str(row[2].value))
+				nu.append(row[3].value)
+				ky.append(row[4].value)
 
-		tableName = sheet['C4'].value
-		for i in range(1, len(cl)) :
-			if i == len(cl)-1 :
+		tableName = sheet['A1'].value
+		for i in range(1, len(ty)) :
+			if i == len(ty)-1 :
 				if nu[i] == 'N' :
-					SQL += cl[i] + ' ' + ty[i] + ' NOT NULL'
+					SQL += cl[i] + ' ' + ty[i] + '(' + le[i] + ')' + ' NOT NULL'
 				else :
-					SQL += cl[i] + ' ' + ty[i]
+					SQL += cl[i] + ' ' + ty[i] + '(' + le[i] + ')'
 
 			else :
 				if nu[i] == 'N' :
-					SQL += cl[i] + ' ' + ty[i] + ' NOT NULL, '
+					SQL += cl[i] + ' ' + ty[i] + '(' + le[i] + ')' + ' NOT NULL, '
 				else :
-					SQL += cl[i] + ' ' + ty[i] + ', '
+					SQL += cl[i] + ' ' + ty[i] + '(' + le[i] + ')' + ', '
 
 			if ky[i] == 'PK' :
 				k = True
@@ -130,7 +130,7 @@ class Oracle_Tibero :
 		DEdsn = cx_Oracle.makedsn(self.info['IP'], self.info['Port'], self.info['sid'])
 		self.DEdb = cx_Oracle.connect(self.info['ID'], self.info['PW'], DEdsn)
 		self.cursorDE = self.DEdb.cursor()
-		self.cursorDE.execute('select TABLE_NAME from tabs')
+		self.cursorDE.execute('SELECT TABLE_NAME FROM tabs')
 		tableList = self.cursorDE.fetchall()
 		tbl = []
 		for table in tableList :
@@ -168,7 +168,7 @@ class Oracle_Tibero :
 		DSdsn = cx_Oracle.makedsn(self.info['IP'], self.info['Port'], self.info['sid'])
 		self.DSdb = cx_Oracle.connect(self.info['ID'], self.info['PW'], DSdsn)
 		self.cursorDS = self.DSdb.cursor()
-		self.cursorDS.execute('select TABLE_NAME from tabs')
+		self.cursorDS.execute('SELECT TABLE_NAME FROM tabs')
 		tableList = self.cursorDS.fetchall()
 		tbl = []
 		for table in tableList :
@@ -181,14 +181,17 @@ class Oracle_Tibero :
 		self.DSWindow.mainloop()
 
 	def pathESFunction(self) :
+		self.entryPath_save.delete(0, END)
 		self.entryPath_save.insert(0, tkFileDialog.asksaveasfilename(initialdir = "/",title = "Select file", filetypes = (("sql files", "*.sql"), ("all files", "*.*"))))
 		self.saveWindow.lift()
 
 	def pathDEFunction(self) :
+		self.DEentryPath.delete(0, END)
 		self.DEentryPath.insert(0, tkFileDialog.asksaveasfilename(initialdir = "/",title = "Select file", filetypes = (("excel files","*.xlsx"), ("all files", "*.*"))))
 		self.DEWindow.lift()
 
 	def pathDSFunction(self) :
+		self.DSentryPath.delete(0, END)
 		self.DSentryPath.insert(0, tkFileDialog.asksaveasfilename(initialdir = "/",title = "Select file", filetypes = (("sql files", "*.sql"), ("all files", "*.*"))))
 		self.DSWindow.lift()
 
@@ -197,6 +200,9 @@ class Oracle_Tibero :
 		f = open(self.entryPath_save.get(), 'w')
 		if self.info['Sheet'] == 'all' :
 			for sheetnamesList in self.sheetList :
+				if len(self.sheetList) == 1 :
+					f.write(self.sendSQL[str(sheetnamesList)])
+					break
 				f.write(self.sendSQL[str(sheetnamesList)] + '\n\n')
 		else :
 			f.write(self.sendSQL[self.name])
@@ -207,8 +213,12 @@ class Oracle_Tibero :
 
 	def saveExcelFunction(self) :
 		self.textB.delete(1.0, END)
-		self.cursorDE.execute("select COLUMN_NAME, DATA_TYPE, DATA_LENGTH from USER_TAB_COLUMNS where TABLE_NAME = '" + self.comboTbl.get() +"'")
+		self.cursorDE.execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + self.comboTbl.get() +"'")
 		saveList = self.cursorDE.fetchall()
+		self.cursorDE.execute("SELECT COLUMN_NAME FROM USER_CONS_COLUMNS WHERE CONSTRAINT_NAME = '" + self.comboTbl.get() + "PK'")
+		pkList = self.cursorDE.fetchall()
+		self.cursorDE.execute("SELECT SEARCH_CONDITION FROM ALL_CONSTRAINTS WHERE TABLE_NAME = '" + self.comboTbl.get() + "'")
+		nullList = self.cursorDE.fetchall()
 
 		wb = openpyxl.Workbook()
 		sheetmkNew = wb.active
@@ -217,6 +227,9 @@ class Oracle_Tibero :
 		sheetmkNew.column_dimensions['A'].width = 25
 		sheetmkNew.column_dimensions['B'].width = 15
 		sheetmkNew.column_dimensions['C'].width = 15
+		sheetmkNew.column_dimensions['D'].width = 10
+		sheetmkNew.column_dimensions['E'].width = 10
+
 		sheetmkNew.freeze_panes = 'A4'
 
 		fontObj = Font(size = 20, bold = True)
@@ -225,17 +238,44 @@ class Oracle_Tibero :
 		sheetmkNew['A3'].font = fontBold
 		sheetmkNew['B3'].font = fontBold
 		sheetmkNew['C3'].font = fontBold
+		sheetmkNew['D3'].font = fontBold
+		sheetmkNew['E3'].font = fontBold
 
 		cnt = 4
 		sheetmkNew.cell(row = 1, column = 1).value = self.comboTbl.get()
 		sheetmkNew.cell(row = 3, column = 1).value = 'COLUMN_NAME'
 		sheetmkNew.cell(row = 3, column = 2).value = 'DATA_TYPE'
 		sheetmkNew.cell(row = 3, column = 3).value = 'DATA_LENGTH'
+		sheetmkNew.cell(row = 3, column = 4).value = 'NULL'
+		sheetmkNew.cell(row = 3, column = 5).value = 'KEY'
+
 		for into in saveList :
 			sheetmkNew.cell(row = cnt, column = 1).value = into[0]
 			sheetmkNew.cell(row = cnt, column = 2).value = into[1]
 			sheetmkNew.cell(row = cnt, column = 3).value = into[2]
+
 			cnt += 1
+
+		nullName = []
+		for nulllist in nullList :
+			for i in range(1, len(str(nulllist[0]))) :
+				if str(nulllist[0])[i] == '"' :
+					nullName.append(str(nulllist[0])[1:i])
+
+		cnt = 4
+		for count in range(0, len(saveList)) :
+			for n in range(0, len(nullName)) :
+				if nullName[n] in saveList[count] :
+					sheetmkNew.cell(row = cnt, column = 4).value = 'N'
+			cnt += 1
+
+		cnt = 4
+		for count in range(0, len(saveList)) :
+			for k in range(0, len(pkList)) :
+				if pkList[k][0] in saveList[count] :
+					sheetmkNew.cell(row = cnt, column = 5).value = 'PK'
+			cnt += 1
+
 		wb.save(self.DEentryPath.get())
 		self.DEdb.close()
 		self.textB.insert(1.0, 'DB Scheme -> Excel Complete!\n\n')
@@ -244,14 +284,14 @@ class Oracle_Tibero :
 
 	def DB_SQLFunction(self) :
 		self.textB.delete(1.0, END)
-		self.cursorDS.execute("select COLUMN_NAME, DATA_TYPE, DATA_LENGTH from USER_TAB_COLUMNS where TABLE_NAME = '" + self.comboTblDS.get() +"'")
+		self.cursorDS.execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + self.comboTblDS.get() +"'")
 		sqlList = self.cursorDS.fetchall()
-		self.cursorDS.execute("select COLUMN_NAME from USER_CONS_COLUMNS where CONSTRAINT_NAME = '" + self.comboTblDS.get() + "PK'")
+		self.cursorDS.execute("SELECT COLUMN_NAME FROM USER_CONS_COLUMNS WHERE CONSTRAINT_NAME = '" + self.comboTblDS.get() + "PK'")
 		pkList = self.cursorDS.fetchall()
-		self.cursorDS.execute("select SEARCH_CONDITION from ALL_CONSTRAINTS where TABLE_NAME = '" + self.comboTblDS.get() + "'")
+		self.cursorDS.execute("SELECT SEARCH_CONDITION FROM ALL_CONSTRAINTS WHERE TABLE_NAME = '" + self.comboTblDS.get() + "'")
 		nullList = self.cursorDS.fetchall()
 
-		SQLsentence = 'create table ' + self.comboTblDS.get() + ' ( '
+		SQLsentence = 'CREATE TABLE ' + self.comboTblDS.get() + ' ( '
 		SQLsentenceList = []
 		nllist = []
 		for sqllist in sqlList :
