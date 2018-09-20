@@ -64,6 +64,7 @@ class MainFrame(Frame) :
 		self.entryPath.pack(side = LEFT, fill = X, padx = 5, expand = True)
 		buttonPath = ttk.Button(frame4, text = 'open', command = self.openFunction)
 		buttonPath.pack(side = LEFT, padx = 20)
+
 	# Select sheet.
 		frame5 = Frame(self)
 		frame5.pack(fill = X, padx = 60)
