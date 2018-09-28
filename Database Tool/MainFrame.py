@@ -20,7 +20,7 @@ class MainFrame(Frame):
 		self.comboDBMS = ttk.Combobox(frame1, width=20)
 		self.comboDBMS['values'] = ('Oracle / Tibero', 'Altibase', 'MS-SQL', 'MySQL / MariaDB')
 		self.comboDBMS.current(0)
-		self.comboDBMS.config(state='readonly')
+		self.comboDBMS.(state='readonly')
 		self.comboDBMS.pack(side=LEFT, pady=10)
 		self.buttonConnect = ttk.Button(frame1, text='connect', command=self.connectFunction)
 		self.buttonConnect.pack(side=LEFT, padx=20)
@@ -51,7 +51,6 @@ class MainFrame(Frame):
 		self.textB = Text(frame7)
 		self.textB.pack(fill=BOTH, expand=1)
 		self.textB.config(yscrollcommand=scrollbar.set)
-		self.textB.config(state="readonly")
 		scrollbar.config(command=self.textB.yview)
 
 # MainFrame excel file open.
