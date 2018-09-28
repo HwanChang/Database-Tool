@@ -1,0 +1,17 @@
+2018-9-28 10:48:48	Connection Test Failed.				[ , , , ,  ]
+2018-9-28 10:48:55	Alias Registered.					[ s ]
+2018-9-28 10:48:58	Connection Test Failed.				[ wefa, asdg, ssdf, sdf, sdf ]
+2018-9-28 10:49:1	Alias Deleted.						[ s ]
+2018-9-28 10:49:25	Connected.							[ secuve.c04wajvm6oez.ap-northeast-2.rds.amazonaws.com, 1623, ORCL, secuve, secuve00. ]
+2018-9-28 10:49:30	Excel -> DB Scheme Function.		[ C:/Users/Secuve/Desktop/DB정의서.xlsx ]
+2018-9-28 10:49:30	Excel -> DB Scheme Function.		[ C:/Users/Secuve/Desktop/DB정의서.xlsx ]
+2018-9-28 10:49:30	Excel -> DB Scheme Function.		[ C:/Users/Secuve/Desktop/DB정의서.xlsx ]
+2018-9-28 10:49:39	Excel -> SQL File Function.			[ C:/Users/Secuve/Desktop/DB정의서.xlsx -> C:/Users/Secuve/Desktop/ddd.sql ]
+2018-9-28 10:49:48	DB Scheme -> Excel File Function.	[ C:/Users/Secuve/Desktop/asdf.xlsx ]
+2018-9-28 10:49:55	DB Scheme -> SQL File Function.		[ C:/Users/Secuve/Desktop/fff.sql ]
+2018-9-28 10:50:2	Table dropped.
+2018-9-28 10:50:3	Table dropped.
+2018-9-28 10:50:5	Disconnected.						[ secuve.c04wajvm6oez.ap-northeast-2.rds.amazonaws.com, 1623, ORCL, secuve, secuve00. ]
+2018-9-28 10:52:26	Connection Failed.					[ , , , ,  ]
+2018-9-28 10:54:36	Connected.							[ secuve.c04wajvm6oez.ap-northeast-2.rds.amazonaws.com, 1623, ORCL, secuve, secuve00. ]
+2018-9-28 10:57:37	Connected.							[ secuve.c04wajvm6oez.ap-northeast-2.rds.amazonaws.com, 1623, ORCL, secuve, secuve00. ]
