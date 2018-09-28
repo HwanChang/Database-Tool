@@ -123,7 +123,7 @@ class Oracle_Tibero:
 			tableList = self.info['Cursor'].fetchall()
 
 			self.DEWindow = Toplevel()
-			self.DEWindow.title('Excel File')
+			self.DEWindow.title('DB Scheme -> Excel')
 			self.DEWindow.geometry('600x200+200+200')
 			self.DEWindow.resizable(False, False)
 
@@ -159,7 +159,7 @@ class Oracle_Tibero:
 			tableList = self.info['Cursor'].fetchall()
 
 			self.DSWindow = Toplevel()
-			self.DSWindow.title('SQL File')
+			self.DSWindow.title('DB Scheme -> SQL File')
 			self.DSWindow.geometry('600x200+200+200')
 			self.DSWindow.resizable(False, False)
 
