@@ -124,7 +124,7 @@ class Oracle_Tibero:
 
 			self.DEWindow = Toplevel()
 			self.DEWindow.title('Excel File')
-			self.DEWindow.geometry('600x100+200+200')
+			self.DEWindow.geometry('600x200+200+200')
 			self.DEWindow.resizable(False, False)
 
 			frame_DE = Frame(self.DEWindow)
@@ -140,14 +140,11 @@ class Oracle_Tibero:
 			frame_DE2.pack(fill=X, padx=10, pady=5)
 			DEbuttonSave_save = ttk.Button(frame_DE2, text='save', command=self.DB_ExcelFunction)
 			DEbuttonSave_save.pack(side=RIGHT, padx=5, pady=5)
-			tbl = []
-			for table in tableList:
-				tbl = tbl + [table[0]]
-			self.comboTbl = ttk.Combobox(frame_DE2, width=20)
-			self.comboTbl['values'] = tbl
-			self.comboTbl.current(0)
-			self.comboTbl.pack(side=RIGHT, padx=5, pady=5)
-			self.comboTbl.config(state='readonly')
+			self.listboxDE = Listbox(frame_DE2, width=30, selectmode=EXTENDED)
+			self.listboxDE.pack(side=RIGHT, padx=5)
+			self.listboxDE.delete(0, END)
+			for item in tableList:
+				self.listboxDE.insert(END, item)
 			labelSheet = Label(frame_DE2, text='Sheet', width=5)
 			labelSheet.pack(side=LEFT, padx=5, pady=5)
 			self.entrySheet = ttk.Entry(frame_DE2, width=20)
@@ -163,7 +160,7 @@ class Oracle_Tibero:
 
 			self.DSWindow = Toplevel()
 			self.DSWindow.title('SQL File')
-			self.DSWindow.geometry('600x100+200+200')
+			self.DSWindow.geometry('600x200+200+200')
 			self.DSWindow.resizable(False, False)
 
 			frame_DS = Frame(self.DSWindow)
@@ -179,14 +176,11 @@ class Oracle_Tibero:
 			frame_DS2.pack(fill=X, padx=10, pady=5)
 			DSbuttonSave_save = ttk.Button(frame_DS2, text='save', command=self.DB_SQLFunction)
 			DSbuttonSave_save.pack(side=RIGHT, padx=5, pady=5)
-			tbl = []
-			for table in tableList:
-				tbl = tbl + [table[0]]
-			self.comboTblDS = ttk.Combobox(frame_DS2, width=20)
-			self.comboTblDS['values'] = tbl
-			self.comboTblDS.current(0)
-			self.comboTblDS.pack(side=RIGHT, padx=5, pady=5)
-			self.comboTblDS.config(state='readonly')
+			self.listboxDS = Listbox(frame_DS2, width=50, selectmode=EXTENDED)
+			self.listboxDS.pack(side=RIGHT, padx=5)
+			self.listboxDS.delete(0, END)
+			for item in tableList:
+				self.listboxDS.insert(END, item)
 
 			self.DSWindow.mainloop()
 		except cx_Oracle.DatabaseError:
@@ -232,14 +226,6 @@ class Oracle_Tibero:
 
 	def DB_ExcelFunction(self):
 		try:
-			self.textB.delete(1.0, END)
-			self.info['Cursor'].execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + self.comboTbl.get() +"'")
-			saveList = self.info['Cursor'].fetchall()
-			self.info['Cursor'].execute("SELECT COLUMN_NAME FROM USER_CONS_COLUMNS WHERE CONSTRAINT_NAME = '" + self.comboTbl.get() + "PK'")
-			pkList = self.info['Cursor'].fetchall()
-			self.info['Cursor'].execute("SELECT SEARCH_CONDITION FROM ALL_CONSTRAINTS WHERE TABLE_NAME = '" + self.comboTbl.get() + "'")
-			nullList = self.info['Cursor'].fetchall()
-
 			wb = openpyxl.Workbook()
 			sheetmkNew = wb.active
 			sheetmkNew.title = self.entrySheet.get()
@@ -250,50 +236,63 @@ class Oracle_Tibero:
 			sheetmkNew.column_dimensions['D'].width = 15
 			sheetmkNew.column_dimensions['E'].width = 10
 			sheetmkNew.column_dimensions['F'].width = 10
-
 			fontObj = Font(size=20, bold=True)
 			fontBold = Font(bold = True)
-			sheetmkNew['A1'].font = fontObj
-			sheetmkNew['B3'].font = fontBold
-			sheetmkNew['C3'].font = fontBold
-			sheetmkNew['D3'].font = fontBold
-			sheetmkNew['E3'].font = fontBold
-			sheetmkNew['F3'].font = fontBold
 
-			cnt = 3
-			sheetmkNew.cell(row=1, column=1).value = self.comboTbl.get()
-			sheetmkNew.cell(row=2, column=2).value = 'COLUMN_NAME'
-			sheetmkNew.cell(row=2, column=3).value = 'DATA_TYPE'
-			sheetmkNew.cell(row=2, column=4).value = 'DATA_LENGTH'
-			sheetmkNew.cell(row=2, column=5).value = 'NULL'
-			sheetmkNew.cell(row=2, column=6).value = 'KEY'
+			self.textB.delete(1.0, END)
 
-			for into in saveList:
-				sheetmkNew.cell(row=cnt, column=2).value = into[0]
-				sheetmkNew.cell(row=cnt, column=3).value = into[1]
-				sheetmkNew.cell(row=cnt, column=4).value = into[2]
-				cnt += 1
+			lineNum = 1
+			lineCnt = 0
+			for index in self.listboxDE.curselection():
+				self.info['Cursor'].execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + str(self.listboxDE.get(index)[0]) +"'")
+				saveList = self.info['Cursor'].fetchall()
+				self.info['Cursor'].execute("SELECT COLUMN_NAME FROM USER_CONS_COLUMNS WHERE CONSTRAINT_NAME = '" + str(self.listboxDE.get(index)[0]) + "PK'")
+				pkList = self.info['Cursor'].fetchall()
+				self.info['Cursor'].execute("SELECT SEARCH_CONDITION FROM ALL_CONSTRAINTS WHERE TABLE_NAME = '" + str(self.listboxDE.get(index)[0]) + "'")
+				nullList = self.info['Cursor'].fetchall()
 
-			nullName = []
-			for nulllist in nullList:
-				for i in range(1, len(str(nulllist[0]))):
-					if str(nulllist[0])[i] == '"':
-						nullName.append(str(nulllist[0])[1:i])
+				sheetmkNew['A' + str(lineNum)].font = fontObj
+				sheetmkNew['B' + str(lineNum+1)].font = fontBold
+				sheetmkNew['C' + str(lineNum+1)].font = fontBold
+				sheetmkNew['D' + str(lineNum+1)].font = fontBold
+				sheetmkNew['E' + str(lineNum+1)].font = fontBold
+				sheetmkNew['F' + str(lineNum+1)].font = fontBold
 
-			cnt = 3
-			for count in range(0, len(saveList)):
-				for n in range(0, len(nullName)):
-					if nullName[n] in saveList[count]:
-						sheetmkNew.cell(row=cnt, column=5).value = 'N'
-				cnt += 1
+				cnt = lineNum + 2
+				sheetmkNew.cell(row=lineNum, column=1).value = str(self.listboxDE.get(index)[0])
+				sheetmkNew.cell(row=lineNum+1, column=2).value = 'COLUMN_NAME'
+				sheetmkNew.cell(row=lineNum+1, column=3).value = 'DATA_TYPE'
+				sheetmkNew.cell(row=lineNum+1, column=4).value = 'DATA_LENGTH'
+				sheetmkNew.cell(row=lineNum+1, column=5).value = 'NULL'
+				sheetmkNew.cell(row=lineNum+1, column=6).value = 'KEY'
 
-			cnt = 3
-			for count in range(0, len(saveList)):
-				for k in range(0, len(pkList)):
-					if pkList[k][0] in saveList[count]:
-						sheetmkNew.cell(row=cnt, column=6).value = 'PK'
-				cnt += 1
+				for into in saveList:
+					sheetmkNew.cell(row=cnt, column=2).value = into[0]
+					sheetmkNew.cell(row=cnt, column=3).value = into[1]
+					sheetmkNew.cell(row=cnt, column=4).value = into[2]
+					cnt += 1
 
+				nullName = []
+				for nulllist in nullList:
+					for i in range(1, len(str(nulllist[0]))):
+						if str(nulllist[0])[i] == '"':
+							nullName.append(str(nulllist[0])[1:i])
+
+				cnt = lineNum + 2
+				for count in range(0, len(saveList)):
+					for n in range(0, len(nullName)):
+						if nullName[n] in saveList[count]:
+							sheetmkNew.cell(row=cnt, column=5).value = 'N'
+					cnt += 1
+
+				cnt = lineNum + 2
+				for count in range(0, len(saveList)):
+					for k in range(0, len(pkList)):
+						if pkList[k][0] in saveList[count]:
+							sheetmkNew.cell(row=cnt, column=6).value = 'PK'
+					cnt += 1
+				lineNum += len(saveList) + 4
+				lineCnt += 1
 			wb.save(self.DEentryPath.get())
 			self.textB.insert(1.0, 'DB Scheme -> Excel Complete!\n\n')
 			self.textB.insert(END, self.DEentryPath.get())
@@ -311,40 +310,42 @@ class Oracle_Tibero:
 	def DB_SQLFunction(self):
 		try:
 			self.textB.delete(1.0, END)
-			self.info['Cursor'].execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + self.comboTblDS.get() + "'")
-			sqlList = self.info['Cursor'].fetchall()
-			self.info['Cursor'].execute("SELECT COLUMN_NAME FROM USER_CONS_COLUMNS WHERE CONSTRAINT_NAME = '" + self.comboTblDS.get() + "PK'")
-			pkList = self.info['Cursor'].fetchall()
-			self.info['Cursor'].execute("SELECT SEARCH_CONDITION FROM ALL_CONSTRAINTS WHERE TABLE_NAME = '" + self.comboTblDS.get() + "'")
-			nullList = self.info['Cursor'].fetchall()
+			SQLsentenceLast = ''
+			for index in self.listboxDS.curselection():
+				self.info['Cursor'].execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + str(self.listboxDS.get(index)[0]) + "'")
+				sqlList = self.info['Cursor'].fetchall()
+				self.info['Cursor'].execute("SELECT COLUMN_NAME FROM USER_CONS_COLUMNS WHERE CONSTRAINT_NAME = '" + str(self.listboxDS.get(index)[0]) + "PK'")
+				pkList = self.info['Cursor'].fetchall()
+				self.info['Cursor'].execute("SELECT SEARCH_CONDITION FROM ALL_CONSTRAINTS WHERE TABLE_NAME = '" + str(self.listboxDS.get(index)[0]) + "'")
+				nullList = self.info['Cursor'].fetchall()
 
-			SQLsentence = 'CREATE TABLE ' + self.comboTblDS.get() + ' ( '
-			SQLsentenceList = []
-			nllist = []
-			for sqllist in sqlList:
-				SQLsentenceList = SQLsentenceList + [sqllist[0] + ' ' + sqllist[1] + '(' + str(int(sqllist[2])) + ')']
-			for nulllist in nullList:
-				for i in range(1, len(str(nulllist[0]))):
-					if str(nulllist[0])[i] == '"':
-						nllist.append(str(nulllist[0])[1:i])
-			for count in range(0, len(SQLsentenceList)):
-				for j in range(0, len(nllist)):
-					if nllist[j] in SQLsentenceList[count]:
-						SQLsentenceList[count] = SQLsentenceList[count] + ' ' + 'NOT NULL'
-				if count == len(SQLsentenceList)-1:
-					break
-				SQLsentenceList[count] = SQLsentenceList[count] + ','
+				SQLsentence = 'CREATE TABLE ' + str(self.listboxDS.get(index)[0]) + ' ( '
+				SQLsentenceList = []
+				nllist = []
+				for sqllist in sqlList:
+					SQLsentenceList = SQLsentenceList + [sqllist[0] + ' ' + sqllist[1] + '(' + str(int(sqllist[2])) + ')']
+				for nulllist in nullList:
+					for i in range(1, len(str(nulllist[0]))):
+						if str(nulllist[0])[i] == '"':
+							nllist.append(str(nulllist[0])[1:i])
+				for count in range(0, len(SQLsentenceList)):
+					for j in range(0, len(nllist)):
+						if nllist[j] in SQLsentenceList[count]:
+							SQLsentenceList[count] = SQLsentenceList[count] + ' ' + 'NOT NULL'
+					if count == len(SQLsentenceList)-1:
+						break
+					SQLsentenceList[count] = SQLsentenceList[count] + ','
 
-				for k in range(0, len(pkList)):
-					if pkList[k][0] in SQLsentenceList[count]:
-						SQLsentenceList.append('CONSTRAINT ' + self.comboTblDS.get() + 'pk PRIMARY KEY (' + pkList[k][0] + ')')
+					for k in range(0, len(pkList)):
+						if pkList[k][0] in SQLsentenceList[count]:
+							SQLsentenceList.append('CONSTRAINT ' + str(self.listboxDS.get(index)[0]) + 'pk PRIMARY KEY (' + pkList[k][0] + ')')
 
-			for makeSentence in range(0, len(SQLsentenceList)):
-				SQLsentence = SQLsentence + SQLsentenceList[makeSentence] + ' '
-			SQLsentence = SQLsentence + ');'
-
+				for makeSentence in range(0, len(SQLsentenceList)):
+					SQLsentence = SQLsentence + SQLsentenceList[makeSentence] + ' '
+				SQLsentence = SQLsentence + ');\n\n'
+				SQLsentenceLast += SQLsentence
 			f = open(self.DSentryPath.get(), 'w')
-			f.write(SQLsentence)
+			f.write(SQLsentenceLast)
 			f.close()
 			self.textB.insert(1.0, 'DB Scheme -> SQL File Complete!\n\n')
 			self.textB.insert(END, self.DSentryPath.get())
