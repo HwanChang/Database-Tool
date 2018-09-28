@@ -51,6 +51,7 @@ class MainFrame(Frame):
 		self.textB = Text(frame7)
 		self.textB.pack(fill=BOTH, expand=1)
 		self.textB.config(yscrollcommand=scrollbar.set)
+		self.textB.config(state="readonly")
 		scrollbar.config(command=self.textB.yview)
 
 # MainFrame excel file open.
