@@ -1,21 +1,27 @@
-import tkFileDialog, ttk, openpyxl, cx_Oracle, tkMessageBox, datetime
+# -*- coding: utf-8 -*-
+import tkFileDialog, ttk, openpyxl, cx_Oracle, tkMessageBox, datetime, collections, threading
 from Tkinter import *
-from openpyxl.styles import Font
+from openpyxl.styles import Border, Side, Font
+import os
+os.putenv("NLS_LANG", "KOREAN_KOREA.KO16KSC5601")
 
 class Oracle_Tibero:
 	def __init__(self, info, textB):
 		self.info = info
 		self.textB = textB
-
 	# Functions by button type.
 		if self.info['Type'] == 'ED' or self.info['Type'] == 'ES':
-			self.sendSQL = {}
+			self.sendSQL = collections.OrderedDict()
+			self.realList = list()
 			self.excel_document = openpyxl.load_workbook(self.info['Path'])
 			self.sheetList = self.excel_document.sheetnames
 			if self.info['Sheet'] == 'all':
 				for sheetnameList in self.sheetList:
-					self.sendSQL[str(sheetnameList)] = ''
-					self.ED_ESFunction(str(sheetnameList))
+					if sheetnameList[0] == '#':
+						continue
+					self.realList.append(sheetnameList)
+				for real in self.realList:
+					self.ED_ESFunction(real)
 			else:
 				self.ED_ESFunction(self.info['Sheet'])
 		elif self.info['Type'] == 'DE':
@@ -27,71 +33,188 @@ class Oracle_Tibero:
 	def ED_ESFunction(self, name):
 		self.name = name
 		self.sheet = self.excel_document[name]
-		check_tableName = []
 		self.sendSQL[name] = []
-		for check_rows in self.sheet.rows:
-			if check_rows[0].value is not None:
-				cnt = list(self.sheet.rows).index(check_rows)
-				cl = []
-				ty = []
-				le = []
-				nu = []
-				ky = []
-				mkList = []
-				SQL = ''
-				PKEY = ''
-				k = False
-
-				all_rows = self.sheet.rows
-				for row in list(all_rows)[cnt+1:]:
-					if row[2].value is not None:
-						if isinstance(row[3].value, float):
-							le.append(str(int(row[3].value)))
-						else:
-							le.append(str(row[3].value))
-						cl.append(row[1].value)
-						ty.append(row[2].value)
-						nu.append(row[4].value)
-						ky.append(row[5].value)
+		self.tables = collections.OrderedDict()
+		self.commentsTables = collections.OrderedDict()
+		count = 0
+		for row in list(self.sheet.rows)[1:]:
+			if row[0].value == '#':
+				continue
+			if row[1].value is None:
+				count += 1
+				if count > 5:
+					self.tables[tableName[0]] = tableRows
+					self.commentsTables[tableName[0]] = tableName[1]
+					break
+				continue
+			if row[3].value is None:
+				count = 0
+				try:
+					self.tables[tableName[0]] = tableRows
+					self.commentsTables[tableName[0]] = tableName[1]
+				except UnboundLocalError:
+					pass
+				tableRows = list()
+				tableName = [str(row[1].value), row[2].value]
+				continue
+			length = str()
+			korName = str()
+			effectiveLength = str()
+			sample = str()
+			description = str()
+			if list(self.sheet.rows)[0][8].value is not None:
+				if row[2].value is not None:
+					korName = row[2].value
+				if row[4].value is not None:
+					length = str(row[4].value)
+				if row[6].value is not None:
+					if isinstance(row[6].value, long):
+						effectiveLength = str(row[6].value)
 					else:
-						break
-
-				tableName = self.sheet['A' + str(cnt+1)].value
-				for i in range(1, len(cl)):
-					if i == len(cl)-1:
-						if nu[i] == 'N':
-							SQL += cl[i] + ' ' + ty[i] + '(' + le[i] + ')' + ' NOT NULL'
+						effectiveLength = row[6].value
+				if row[7].value is not None:
+					if not isinstance(row[7].value, long):
+						if not isinstance(row[7].value, datetime.datetime):
+							sample = row[7].value
 						else:
-							SQL += cl[i] + ' ' + ty[i] + '(' + le[i] + ')'
-
+							sample = str(row[7].value)
 					else:
-						if nu[i] == 'N':
-							SQL += cl[i] + ' ' + ty[i] + '(' + le[i] + ')' + ' NOT NULL, '
+						sample = str(row[7].value)
+				if row[8].value is not None:
+					description = row[8].value
+				tableRows.append([str(row[1].value), korName, str(row[3].value), length, str(row[5].value), effectiveLength, sample, description])
+			else:
+				if row[2].value is not None:
+					korName = row[2].value
+				if row[4].value is not None:
+					length = str(row[4].value)
+				if row[6].value is not None:
+					if not isinstance(row[6].value, long):
+						if not isinstance(row[6].value, datetime.datetime):
+							sample = row[6].value
 						else:
-							SQL += cl[i] + ' ' + ty[i] + '(' + le[i] + ')' + ', '
-
-					if ky[i] == 'PK':
-						k = True
-						PKEY += ', CONSTRAINT ' + str(tableName) + 'pk PRIMARY KEY (' + cl[i] + ')'
-
-				if k == True:
-					self.sendSQL[name].append('CREATE TABLE ' + str(tableName) + ' ( ' + SQL + PKEY + ' )')
+							sample = str(row[6].value)
+					else:
+						sample = str(row[6].value)
+				if row[7].value is not None:
+					description = row[7].value
+				tableRows.append([str(row[1].value), korName, str(row[3].value), length, str(row[5].value), '', sample, description])
+			if row == list(self.sheet.rows)[-1]:
+				self.tables[tableName[0]] = tableRows
+				self.commentsTables[tableName[0]] = tableName[1]
+		commentsColumns = collections.OrderedDict()
+		for tblName, tblContents in self.tables.items():
+			SQL = ''
+			constraintName = list()
+			commentsColumns[tblName] = list()
+			notNull = False
+			for row in tblContents:
+				if row == tblContents[0]:
+					if row[4] == 'Y':
+						if row[2] == 'string':
+							SQL += '\t' + row[0] + ' varchar2(' + row[3] + ') NOT NULL'
+						elif row[2] == 'char':
+							SQL += '\t' + row[0] + ' ' + row[2] + '(' + row[3] + ') NOT NULL'
+						elif 'number' in row[2]:
+							SQL += '\t' + row[0] + ' ' + row[2] + ' NOT NULL'
+						constraintName.append(row[0])
+						notNull = True
+						commentsColumns[tblName].append([row[0], row[1], row[4], row[5], row[6], row[7]])
+					else:
+						if row[2] == 'int':
+							SQL += '\t' + row[0] + ' number PRIMARY KEY NOT NULL'
+						elif row[2] == 'string':
+							SQL += '\t' + row[0] + ' varchar2(' + row[3] + ')'
+						elif row[2] == 'char':
+							SQL += '\t' + row[0] + ' ' + row[2] + '(' + row[3] + ')'
+						elif row[2] == 'text':
+							SQL += '\t' + row[0] + ' clob'
+						elif 'number' in row[2]:
+							SQL += '\t' + row[0] + ' ' + row[2] + ''
+						commentsColumns[tblName].append([row[0], row[1], row[4], row[5], row[6], row[7]])
 				else:
-					self.sendSQL[name].append('CREATE TABLE ' + str(tableName) + ' ( ' + SQL + PKEY + ' )')
-			# Excel -> DB Scheme function
+					if row[4] == 'Y':
+						if row[2] == 'int':
+							SQL += ', \n\t' + row[0] + ' number NOT NULL'
+						elif row[2] == 'string':
+							SQL += ', \n\t' + row[0] + ' varchar2(' + row[3] + ') NOT NULL'
+						elif row[2] == 'char':
+							SQL += ', \n\t' + row[0] + ' ' + row[2] + '(' + row[3] + ') NOT NULL'
+						elif 'number' in row[2]:
+							SQL += ', \n\t' + row[0] + ' ' + row[2] + ' NOT NULL'
+						commentsColumns[tblName].append([row[0], row[1], row[4], row[5], row[6], row[7]])
+						constraintName.append(row[0])
+						notNull = True
+					else:
+						if row[2] == 'int':
+							SQL += ', \n\t' + row[0] + ' number'
+						elif row[2] == 'string':
+							SQL += ', \n\t' + row[0] + ' varchar2(' + row[3] + ')'
+						elif row[2] == 'char':
+							SQL += ', \n\t' + row[0] + ' ' + row[2] + '(' + row[3] + ')'
+						elif row[2] == 'text':
+							SQL += ', \n\t' + row[0] + ' clob'
+						elif 'number' in row[2]:
+							SQL += ', \n\t' + row[0] + ' ' + row[2] + ''
+						commentsColumns[tblName].append([row[0], row[1], row[4], row[5], row[6], row[7]])
+			if notNull:
+				constList = ''
+				for index_C, cont in enumerate(constraintName):
+					if index_C is not len(constraintName)-1:
+						constList += cont + ', '
+					else:
+						constList += cont
+				SQL += ', \n\n\tCONSTRAINT UK_' + tblName.split('_')[1] + ' UNIQUE(' + constList +')'
+			comments = list()
+			for comment in commentsColumns[tblName]:
+				if comment == commentsColumns[tblName][0]:
+					comments.append('COMMENT ON TABLE ' + tblName + " IS '" + self.commentsTables[tblName] + "'")
+				comments.append('COMMENT ON COLUMN ' + tblName + '.' + comment[0] + " IS '" + comment[1] + '__' + comment[2] + '__' + comment[3] + '__' + comment[4] + '__' + comment[5] + "'")
+			self.sendSQL[name].append(['CREATE TABLE ' + tblName + ' \n(\n' + SQL + '\n)\n', '\n\nCREATE SEQUENCE SEQ_' + tblName.split('_')[1] + ' \nINCREMENT BY 1\nSTART WITH 1\nNOMAXVALUE\nNOCYCLE\nNOCACHE\n', comments])
+	# Excel -> DB Scheme function
 		if self.info['Type'] == 'ED':
+			dropT = list()
+			dropS = list()
 			self.textB.delete(1.0, END)
+			self.info['Cursor'].execute('SELECT TABLE_NAME FROM tabs')
+			tab = self.info['Cursor'].fetchall()
+			self.info['Cursor'].execute('SELECT SEQUENCE_NAME FROM user_sequences ')
+			seq = self.info['Cursor'].fetchall()
+
+			if self.info['Drop'] == 1:
+				for send in self.sendSQL[name]:
+					for tName in tab:
+						if tName[0] == str(send[0].split(' ')[2]).upper():
+							dropT.append(tName[0])
+							break
+				for send in self.sendSQL[name]:
+					for sName in seq:
+						if sName[0] == str(send[1].split(' ')[2]).upper():
+							dropS.append(sName[0])
+							break
 			for send in self.sendSQL[name]:
-				self.info['Cursor'].execute(send)
+				if self.info['Drop'] == 1:
+					if str(send[0].split(' ')[2]).upper() in dropT:
+						self.info['Cursor'].execute('DROP TABLE ' + str(send[0].split(' ')[2]))
+					self.info['Cursor'].execute(send[0])
+					if str(send[1].split(' ')[2]).upper() in dropS:
+						self.info['Cursor'].execute('DROP SEQUENCE ' + str(send[1].split(' ')[2]))
+					self.info['Cursor'].execute(send[1])
+					for sql in send[2]:
+						self.info['Cursor'].execute(sql)
+				else:
+					self.info['Cursor'].execute(send[0])
+					self.info['Cursor'].execute(send[1])
+					for sql in send[2]:
+						self.info['Cursor'].execute(sql)
 			self.textB.insert(1.0, 'Excel -> DB Scheme Complete!')
 			self.info['Window'].destroy()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
 			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tExcel -> DB Scheme Function.\t\t[ ' + str(self.info['Path'].encode('euc-kr')) + ' ]' + '\n')
 			f.close()
-
 		elif self.info['Type'] == 'ES':
 			if self.info['Sheet'] == 'all':
-				if name == self.sheetList[len(self.sheetList)-1]:
+				if name == self.realList[len(self.realList)-1]:
 					self.ESmkFunction()
 			else:
 				self.ESmkFunction()
@@ -121,6 +244,7 @@ class Oracle_Tibero:
 		try:
 			self.info['Cursor'].execute('SELECT TABLE_NAME FROM tabs')
 			tableList = self.info['Cursor'].fetchall()
+			tableList.reverse()
 
 			self.DEWindow = Toplevel()
 			self.DEWindow.title('DB Scheme -> Excel')
@@ -157,6 +281,7 @@ class Oracle_Tibero:
 		try:
 			self.info['Cursor'].execute('SELECT TABLE_NAME FROM tabs')
 			tableList = self.info['Cursor'].fetchall()
+			tableList.reverse()
 
 			self.DSWindow = Toplevel()
 			self.DSWindow.title('DB Scheme -> SQL File')
@@ -181,7 +306,6 @@ class Oracle_Tibero:
 			self.listboxDS.delete(0, END)
 			for item in tableList:
 				self.listboxDS.insert(END, item)
-
 			self.DSWindow.mainloop()
 		except cx_Oracle.DatabaseError:
 			tkMessageBox.showwarning('Warning','Please check the DBConnection informations.')
@@ -206,12 +330,18 @@ class Oracle_Tibero:
 			self.textB.delete(1.0, END)
 			f = open(self.entryPath_save.get(), 'w')
 			if self.info['Sheet'] == 'all':
-				for sheetnamesList in self.sheetList:
-					for i in range(0, len(self.sendSQL[sheetnamesList])):
-						f.write(self.sendSQL[str(sheetnamesList)][i] + ';\n\n')
+				for realSheetList in self.realList:
+					for i in range(0, len(self.sendSQL[realSheetList])):
+						commStr = str()
+						for comm in self.sendSQL[realSheetList][i][2]:
+							commStr += comm + ';\n\n'
+						f.write(self.sendSQL[realSheetList][i][0] + ';' + self.sendSQL[realSheetList][i][1] + ';\n\n' + commStr.encode('utf-8'))
 			else:
 				for i in range(0, len(self.sendSQL[self.name])):
-					f.write(self.sendSQL[self.name][i] + ';\n\n')
+					commStr = str()
+					for comm in self.sendSQL[self.name][i][2]:
+						commStr += comm + ';\n\n'
+					f.write(self.sendSQL[self.name][i][0] + ';' + self.sendSQL[self.name][i][1] + ';\n\n' + commStr.encode('utf-8'))
 			f.close()
 			self.textB.insert(1.0, 'Excel -> SQL File Complete!\n\n')
 			self.textB.insert(END, self.entryPath_save.get())
@@ -229,70 +359,126 @@ class Oracle_Tibero:
 			wb = openpyxl.Workbook()
 			sheetmkNew = wb.active
 			sheetmkNew.title = self.entrySheet.get()
+		except ValueError:
+			tkMessageBox.showwarning('Warning','Please fill out the Sheet name.')
+			self.DEWindow.lift()
 
-			sheetmkNew.column_dimensions['A'].width = 1.5
-			sheetmkNew.column_dimensions['B'].width = 25
-			sheetmkNew.column_dimensions['C'].width = 15
-			sheetmkNew.column_dimensions['D'].width = 15
-			sheetmkNew.column_dimensions['E'].width = 10
-			sheetmkNew.column_dimensions['F'].width = 10
-			fontObj = Font(size=20, bold=True)
-			fontBold = Font(bold = True)
+		sheetmkNew.column_dimensions['A'].width = 5
+		sheetmkNew.column_dimensions['B'].width = 30
+		sheetmkNew.column_dimensions['C'].width = 30
+		sheetmkNew.column_dimensions['D'].width = 15
+		sheetmkNew.column_dimensions['E'].width = 10
+		sheetmkNew.column_dimensions['F'].width = 7
+		sheetmkNew.column_dimensions['G'].width = 10
+		sheetmkNew.column_dimensions['H'].width = 30
+		sheetmkNew.column_dimensions['I'].width = 60
 
-			self.textB.delete(1.0, END)
+		sheetmkNew.cell(row=1, column=1).value = u'주석'
+		sheetmkNew.cell(row=1, column=2).value = u'필드명'
+		sheetmkNew.cell(row=1, column=3).value = u'필드명(한글)'
+		sheetmkNew.cell(row=1, column=4).value = u'데이터타입'
+		sheetmkNew.cell(row=1, column=5).value = u'길이'
+		sheetmkNew.cell(row=1, column=6).value = u'필수'
+		sheetmkNew.cell(row=1, column=7).value = u'유효길이'
+		sheetmkNew.cell(row=1, column=8).value = u'샘플데이터'
+		sheetmkNew.cell(row=1, column=9).value = u'설명'
+		sheetmkNew.cell(row=2, column=6).value = 'Y/N'
 
-			lineNum = 1
-			lineCnt = 0
-			for index in self.listboxDE.curselection():
-				self.info['Cursor'].execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + str(self.listboxDE.get(index)[0]) +"'")
-				saveList = self.info['Cursor'].fetchall()
-				self.info['Cursor'].execute("SELECT COLUMN_NAME FROM USER_CONS_COLUMNS WHERE CONSTRAINT_NAME = '" + str(self.listboxDE.get(index)[0]) + "PK'")
-				pkList = self.info['Cursor'].fetchall()
-				self.info['Cursor'].execute("SELECT SEARCH_CONDITION FROM ALL_CONSTRAINTS WHERE TABLE_NAME = '" + str(self.listboxDE.get(index)[0]) + "'")
-				nullList = self.info['Cursor'].fetchall()
+		fontBold = Font(bold = True)
+		column_border_L = Border(left=Side(style='thick'))
+		column_border_R = Border(right=Side(style='thick'))
+		row_border_T = Border(top=Side(style='thick'))
+		row_border_B = Border(bottom=Side(style='thick'))
 
-				sheetmkNew['A' + str(lineNum)].font = fontObj
-				sheetmkNew['B' + str(lineNum+1)].font = fontBold
-				sheetmkNew['C' + str(lineNum+1)].font = fontBold
-				sheetmkNew['D' + str(lineNum+1)].font = fontBold
-				sheetmkNew['E' + str(lineNum+1)].font = fontBold
-				sheetmkNew['F' + str(lineNum+1)].font = fontBold
+		self.textB.delete(1.0, END)
 
-				cnt = lineNum + 2
-				sheetmkNew.cell(row=lineNum, column=1).value = str(self.listboxDE.get(index)[0])
-				sheetmkNew.cell(row=lineNum+1, column=2).value = 'COLUMN_NAME'
-				sheetmkNew.cell(row=lineNum+1, column=3).value = 'DATA_TYPE'
-				sheetmkNew.cell(row=lineNum+1, column=4).value = 'DATA_LENGTH'
-				sheetmkNew.cell(row=lineNum+1, column=5).value = 'NULL'
-				sheetmkNew.cell(row=lineNum+1, column=6).value = 'KEY'
-
-				for into in saveList:
-					sheetmkNew.cell(row=cnt, column=2).value = into[0]
-					sheetmkNew.cell(row=cnt, column=3).value = into[1]
-					sheetmkNew.cell(row=cnt, column=4).value = into[2]
-					cnt += 1
-
-				nullName = []
-				for nulllist in nullList:
-					for i in range(1, len(str(nulllist[0]))):
-						if str(nulllist[0])[i] == '"':
-							nullName.append(str(nulllist[0])[1:i])
-
-				cnt = lineNum + 2
-				for count in range(0, len(saveList)):
-					for n in range(0, len(nullName)):
-						if nullName[n] in saveList[count]:
-							sheetmkNew.cell(row=cnt, column=5).value = 'N'
-					cnt += 1
-
-				cnt = lineNum + 2
-				for count in range(0, len(saveList)):
-					for k in range(0, len(pkList)):
-						if pkList[k][0] in saveList[count]:
-							sheetmkNew.cell(row=cnt, column=6).value = 'PK'
-					cnt += 1
-				lineNum += len(saveList) + 4
-				lineCnt += 1
+		lineCnt = 3
+		for index in self.listboxDE.curselection():
+			tableName = str(self.listboxDE.get(index)[0])
+			self.info['Cursor'].execute("SELECT U.COLUMN_NAME, U.DATA_TYPE, U.DATA_LENGTH, A.COMMENTS FROM USER_TAB_COLUMNS U, ALL_COL_COMMENTS A WHERE U.COLUMN_NAME = A.COLUMN_NAME AND U.TABLE_NAME = '" + tableName + "' AND A.TABLE_NAME = '" + tableName + "'")
+			sqlList = self.info['Cursor'].fetchall()
+			self.info['Cursor'].execute("SELECT S.CONSTRAINT_TYPE, C.COLUMN_NAME FROM USER_CONS_COLUMNS C INNER JOIN USER_CONSTRAINTS S ON C.CONSTRAINT_NAME = S.CONSTRAINT_NAME AND (S.CONSTRAINT_TYPE = 'P' OR S.CONSTRAINT_TYPE = 'U') WHERE C.TABLE_NAME = '" + tableName + "' ORDER BY 1")
+			constraintList = self.info['Cursor'].fetchall()
+			self.info['Cursor'].execute("SELECT COMMENTS FROM USER_TAB_COMMENTS WHERE TABLE_NAME = '" + tableName + "'")
+			tableComment = self.info['Cursor'].fetchall()
+			rowList = list()
+			sheetmkNew.cell(row=lineCnt, column=2).value = tableName
+			sheetmkNew.cell(row=lineCnt, column=3).value = unicode(tableComment[0][0], '949')
+			sheetmkNew['B' + str(lineCnt)].font = fontBold
+			sheetmkNew['C' + str(lineCnt)].font = fontBold
+			lineCnt += 1
+			for sqllist in sqlList:
+				rowList.append([str(sqllist[0]), str(sqllist[1]), str(int(sqllist[2])), unicode(sqllist[3], '949')])
+			for row in rowList:
+				if row == rowList[0]:
+					for rowC in sheetmkNew['B' + str(lineCnt) + ':I' + str(lineCnt)]:
+						for cell in rowC:
+							cell.border = cell.border + row_border_T
+				if row == rowList[-1]:
+					for rowC in sheetmkNew['B' + str(lineCnt) + ':I' + str(lineCnt)]:
+						for cell in rowC:
+							cell.border = cell.border + row_border_B
+				sheetmkNew['B' + str(lineCnt)].border = sheetmkNew['B' + str(lineCnt)].border + column_border_L
+				sheetmkNew['I' + str(lineCnt)].border = sheetmkNew['I' + str(lineCnt)].border + column_border_R
+				check = True
+				lowerRow1 = row[1].lower()
+				for const in constraintList:
+					if const[1] == row[0]:
+						if const[0] == 'P':
+							sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
+							sheetmkNew.cell(row=lineCnt, column=3).value = row[3].split('__')[0]
+							sheetmkNew.cell(row=lineCnt, column=4).value = 'int'
+							sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
+							if row[3].split('__')[1] == 'None':
+								sheetmkNew.cell(row=lineCnt, column=6).value = ''
+							else:
+								sheetmkNew.cell(row=lineCnt, column=6).value = row[3].split('__')[1]
+							sheetmkNew.cell(row=lineCnt, column=7).value = row[3].split('__')[2]
+							sheetmkNew.cell(row=lineCnt, column=8).value = row[3].split('__')[3]
+							sheetmkNew.cell(row=lineCnt, column=9).value = row[3].split('__')[4]
+							lineCnt += 1
+							check = False
+							break
+						if const[0] == 'U':
+							sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
+							sheetmkNew.cell(row=lineCnt, column=3).value = row[3].split('__')[0]
+							if lowerRow1 == 'varchar2':
+								sheetmkNew.cell(row=lineCnt, column=4).value = 'string'
+							elif lowerRow1 == 'clob':
+								sheetmkNew.cell(row=lineCnt, column=4).value = 'text'
+							else:
+								sheetmkNew.cell(row=lineCnt, column=4).value = lowerRow1
+							sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
+							if row[3].split('__')[1] == 'None':
+								sheetmkNew.cell(row=lineCnt, column=6).value = ''
+							else:
+								sheetmkNew.cell(row=lineCnt, column=6).value = row[3].split('__')[1]
+							sheetmkNew.cell(row=lineCnt, column=7).value = row[3].split('__')[2]
+							sheetmkNew.cell(row=lineCnt, column=8).value = row[3].split('__')[3]
+							sheetmkNew.cell(row=lineCnt, column=9).value = row[3].split('__')[4]
+							lineCnt += 1
+							check = False
+							break
+				if check:
+					sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
+					sheetmkNew.cell(row=lineCnt, column=3).value = row[3].split('__')[0]
+					if lowerRow1 == 'varchar2':
+						sheetmkNew.cell(row=lineCnt, column=4).value = 'string'
+					elif lowerRow1 == 'clob':
+						sheetmkNew.cell(row=lineCnt, column=4).value = 'text'
+					else:
+						sheetmkNew.cell(row=lineCnt, column=4).value = lowerRow1
+					sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
+					if row[3].split('__')[1] == 'None':
+						sheetmkNew.cell(row=lineCnt, column=6).value = ''
+					else:
+						sheetmkNew.cell(row=lineCnt, column=6).value = row[3].split('__')[1]
+					sheetmkNew.cell(row=lineCnt, column=7).value = row[3].split('__')[2]
+					sheetmkNew.cell(row=lineCnt, column=8).value = row[3].split('__')[3]
+					sheetmkNew.cell(row=lineCnt, column=9).value = row[3].split('__')[4]
+					lineCnt += 1
+			lineCnt += 1
+		try:
 			wb.save(self.DEentryPath.get())
 			self.textB.insert(1.0, 'DB Scheme -> Excel Complete!\n\n')
 			self.textB.insert(END, self.DEentryPath.get())
@@ -303,49 +489,79 @@ class Oracle_Tibero:
 		except IOError:
 			tkMessageBox.showwarning('Warning','Please select a Excel file to save.')
 			self.DEWindow.lift()
-		except ValueError:
-			tkMessageBox.showwarning('Warning','Please fill out the Sheet name.')
-			self.DEWindow.lift()
 
 	def DB_SQLFunction(self):
 		try:
 			self.textB.delete(1.0, END)
-			SQLsentenceLast = ''
+			writeSQLsentence = ''
 			for index in self.listboxDS.curselection():
-				self.info['Cursor'].execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + str(self.listboxDS.get(index)[0]) + "'")
+				tableName = str(self.listboxDS.get(index)[0])
+				checkNull = False
+				self.info['Cursor'].execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + tableName + "'")
 				sqlList = self.info['Cursor'].fetchall()
-				self.info['Cursor'].execute("SELECT COLUMN_NAME FROM USER_CONS_COLUMNS WHERE CONSTRAINT_NAME = '" + str(self.listboxDS.get(index)[0]) + "PK'")
-				pkList = self.info['Cursor'].fetchall()
-				self.info['Cursor'].execute("SELECT SEARCH_CONDITION FROM ALL_CONSTRAINTS WHERE TABLE_NAME = '" + str(self.listboxDS.get(index)[0]) + "'")
-				nullList = self.info['Cursor'].fetchall()
-
-				SQLsentence = 'CREATE TABLE ' + str(self.listboxDS.get(index)[0]) + ' ( '
-				SQLsentenceList = []
-				nllist = []
+				self.info['Cursor'].execute("SELECT S.CONSTRAINT_TYPE, C.COLUMN_NAME FROM USER_CONS_COLUMNS C INNER JOIN USER_CONSTRAINTS S ON C.CONSTRAINT_NAME = S.CONSTRAINT_NAME AND (S.CONSTRAINT_TYPE = 'P' OR S.CONSTRAINT_TYPE = 'U') WHERE C.TABLE_NAME = '" + tableName + "' ORDER BY 1")
+				constraintList = self.info['Cursor'].fetchall()
+				self.info['Cursor'].execute("SELECT COMMENTS FROM USER_TAB_COMMENTS WHERE TABLE_NAME = '" + tableName + "'")
+				tableComment = self.info['Cursor'].fetchall()
+				self.info['Cursor'].execute("SELECT COLUMN_NAME, COMMENTS FROM ALL_COL_COMMENTS WHERE TABLE_NAME = '" + tableName + "'")
+				columnComments = self.info['Cursor'].fetchall()
+				SQLsentence = 'CREATE TABLE ' + tableName + ' \n(\n'
+				rowList = list()
+				constraintName = list()
 				for sqllist in sqlList:
-					SQLsentenceList = SQLsentenceList + [sqllist[0] + ' ' + sqllist[1] + '(' + str(int(sqllist[2])) + ')']
-				for nulllist in nullList:
-					for i in range(1, len(str(nulllist[0]))):
-						if str(nulllist[0])[i] == '"':
-							nllist.append(str(nulllist[0])[1:i])
-				for count in range(0, len(SQLsentenceList)):
-					for j in range(0, len(nllist)):
-						if nllist[j] in SQLsentenceList[count]:
-							SQLsentenceList[count] = SQLsentenceList[count] + ' ' + 'NOT NULL'
-					if count == len(SQLsentenceList)-1:
-						break
-					SQLsentenceList[count] = SQLsentenceList[count] + ','
+					rowList.append([str(sqllist[0]), str(sqllist[1]), str(int(sqllist[2]))])
+				for row in rowList:
+					flag = True
+					if row == rowList[-1]:
+						for const in constraintList:
+							if const[1] == row[0]:
+								if const[0] == 'P':
+									SQLsentence += '\t' + row[0] + ' ' + row[1] + ' PRIMARY KEY NOT NULL'
+									flag = False
+									break
+								if const[0] == 'U':
+									SQLsentence += '\t' + row[0] + ' ' + row[1] + '(' + row[2] + ') NOT NULL'
+									flag = False
+									constraintName.append(row[0])
+									checkNull = True
+									break
 
-					for k in range(0, len(pkList)):
-						if pkList[k][0] in SQLsentenceList[count]:
-							SQLsentenceList.append('CONSTRAINT ' + str(self.listboxDS.get(index)[0]) + 'pk PRIMARY KEY (' + pkList[k][0] + ')')
-
-				for makeSentence in range(0, len(SQLsentenceList)):
-					SQLsentence = SQLsentence + SQLsentenceList[makeSentence] + ' '
-				SQLsentence = SQLsentence + ');\n\n'
-				SQLsentenceLast += SQLsentence
+							if const == constraintList[-1]:
+								flag = True
+						if flag:
+							SQLsentence += '\t' + row[0] + ' ' + row[1] + '(' + row[2] + ')'
+					else:
+						for const in constraintList:
+							if const[1] == row[0]:
+								if const[0] == 'P':
+									SQLsentence += '\t' + row[0] + ' ' + row[1] + ' PRIMARY KEY NOT NULL, \n'
+									flag = False
+									break
+								if const[0] == 'U':
+									SQLsentence += '\t' + row[0] + ' ' + row[1] + '(' + row[2] + ') NOT NULL, \n'
+									flag = False
+									constraintName.append(row[0])
+									checkNull = True
+									break
+							if const == constraintList[-1]:
+								flag = True
+						if flag:
+							SQLsentence += '\t' + row[0] + ' ' + row[1] + '(' + row[2] + '), \n'
+				if checkNull:
+					constList = ''
+					for const in constraintName:
+						if const != constraintName[-1]:
+							constList += const + ', '
+						else:
+							constList += const
+					SQLsentence += ',\n\n\tCONSTRAINT UK_' + str(self.listboxDS.get(index)[0]).split('_')[1] + ' UNIQUE(' + constList + ')'
+				SQLsentence = SQLsentence + '\n)\n;\n\nCREATE SEQUENCE SEQ_' + tableName.split('_')[1] + ' \nINCREMENT BY 1\nSTART WITH 1\nNOMAXVALUE\nNOCYCLE\nNOCACHE\n;\n\n'
+				cCStr = str()
+				for cC in columnComments:
+					cCStr += 'COMMENT ON COLUMN ' + tableName + '.' + cC[0] + " IS '" + cC[1] + "';\n\n"
+				writeSQLsentence += SQLsentence + 'COMMENT ON TABLE ' + tableName + " IS '" + tableComment[0][0] + "';\n\n" + cCStr
 			f = open(self.DSentryPath.get(), 'w')
-			f.write(SQLsentenceLast)
+			f.write(writeSQLsentence)
 			f.close()
 			self.textB.insert(1.0, 'DB Scheme -> SQL File Complete!\n\n')
 			self.textB.insert(END, self.DSentryPath.get())

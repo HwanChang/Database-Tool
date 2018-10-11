@@ -1,5 +1,5 @@
 from Tkinter import *
-import tkFileDialog, ttk, openpyxl, cx_Oracle, Oracle_Tibero, tkMessageBox, datetime
+import tkFileDialog, ttk, openpyxl, cx_Oracle, Oracle_Tibero, tkMessageBox, datetime, PIL
 
 class MainFrame(Frame):
 	def __init__(self, master):
@@ -20,13 +20,10 @@ class MainFrame(Frame):
 		self.comboDBMS = ttk.Combobox(frame1, width=20)
 		self.comboDBMS['values'] = ('Oracle / Tibero', 'Altibase', 'MS-SQL', 'MySQL / MariaDB')
 		self.comboDBMS.current(0)
-		self.comboDBMS.(state='readonly')
+		self.comboDBMS.config(state='readonly')
 		self.comboDBMS.pack(side=LEFT, pady=10)
-		self.buttonConnect = ttk.Button(frame1, text='connect', command=self.connectFunction)
+		self.buttonConnect = ttk.Button(frame1, text='Connect', command=self.connectFunction)
 		self.buttonConnect.pack(side=LEFT, padx=20)
-		self.buttonDroptable = ttk.Button(frame1, text='DropTable', command=self.dropTableFunction)
-		self.buttonDroptable.pack(side=LEFT)
-		self.buttonDroptable.config(state=DISABLED)
 
 	# Function button.
 		frame6 = Frame(self)
@@ -138,8 +135,7 @@ class MainFrame(Frame):
 				self.information[key] = ''
 			self.textB.delete(1.0, END)
 			self.textB.insert(1.0, 'Database Disconnected!!')
-			self.buttonDroptable.config(state=DISABLED)
-			self.buttonConnect.configure(text='connect')
+			self.buttonConnect.configure(text='Connect')
 			tkMessageBox.showinfo('Info', 'Disconnected.')
 
 # Alias read function.
@@ -192,6 +188,9 @@ class MainFrame(Frame):
 			frame5sheetED = Frame(self.pathWindow)
 			frame5sheetED.pack(fill=X, padx=10)
 
+			self.chk = IntVar()
+			checkDrop = ttk.Checkbutton(frame5sheetED, text='DropTable', variable=self.chk)
+			checkDrop.pack(side=LEFT, padx=10)
 			buttonSheetED = ttk.Button(frame5sheetED, text='OK', command=self.clickED_S)
 			buttonSheetED.pack(side=RIGHT, padx=10)
 			self.comboSheet = ttk.Combobox(frame5sheetED, width=20)
@@ -203,21 +202,34 @@ class MainFrame(Frame):
 			labelSheetED.pack(side=RIGHT, padx=5)
 
 	def clickED_S(self):
-		try:
-			if self.comboDBMS.get() == 'Oracle / Tibero':
-				self.DBinfo['Sheet'] = self.comboSheet.get()
-				self.DBinfo['Path'] =  self.entryPath.get()
-				self.DBinfo['Window'] = self.pathWindow
-				self.DBinfo['Type'] = 'ED'
-				Oracle_Tibero.Oracle_Tibero(self.DBinfo, self.textB)
-		except IOError:
-			tkMessageBox.showwarning('Warning','Please select a Excel file.')
-			self.pathWindow.lift()
-		except cx_Oracle.DatabaseError as e:
-			error, = e.args
-			if error.code == 955:
-				tkMessageBox.showwarning('Warning','Please check the DB.\nThe table name is already used.')
-				self.pathWindow.destroy()
+		if self.comboDBMS.get() == 'Oracle / Tibero':
+			self.DBinfo['Sheet'] = self.comboSheet.get()
+			self.DBinfo['Path'] =  self.entryPath.get()
+			self.DBinfo['Window'] = self.pathWindow
+			self.DBinfo['Type'] = 'ED'
+			self.DBinfo['Drop'] = self.chk.get()
+			if self.chk.get() == 0:
+				try:
+					Oracle_Tibero.Oracle_Tibero(self.DBinfo, self.textB)
+				except IOError:
+					tkMessageBox.showwarning('Warning','Please select a Excel file.')
+					self.pathWindow.lift()
+				except cx_Oracle.DatabaseError as e:
+					error, = e.args
+					if error.code == 942:
+						tkMessageBox.showwarning('Warning','There is no Table to drop.')
+						self.pathWindow.lift()
+					elif error.code == 955:
+						tkMessageBox.showwarning('Warning', 'Please check the DB.\nThe table name is already used.')
+						self.pathWindow.lift()
+			else:
+				try:
+					Oracle_Tibero.Oracle_Tibero(self.DBinfo, self.textB)
+				except cx_Oracle.DatabaseError as e:
+					error, = e.args
+					if error.code == 942:
+						tkMessageBox.showwarning('Warning','There is no Table to drop.')
+						self.pathWindow.lift()
 
 	def clickES(self):
 	# File path.
@@ -308,8 +320,7 @@ class MainFrame(Frame):
 			if self.connCheck:
 				self.textB.delete(1.0, END)
 				self.textB.insert(1.0, 'Database Connect!!')
-				self.buttonConnect.configure(text='disconnect')
-				self.buttonDroptable.config(state=NORMAL)
+				self.buttonConnect.configure(text='Disconnect')
 				self.connCheck = False
 				f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
 				f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnected.\t\t\t\t\t\t\t[ ' + self.information['IP'] + ', '+ self.information['Port'] + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]' + '\n')
@@ -395,35 +406,6 @@ class MainFrame(Frame):
 		else:
 			tkMessageBox.showwarning('Warning', 'Please select a alias to delete.')
 			self.connectionWindow.lift()
-
-	def dropTableFunction(self):
-		self.cursor.execute('SELECT TABLE_NAME FROM tabs')
-		tableList = self.cursor.fetchall()
-
-		dropWindow = Toplevel()
-		dropWindow.title('Drop Table')
-		dropWindow.geometry('350x180+300+300')
-		dropWindow.resizable(False, False)
-
-		frameDrop = Frame(dropWindow)
-		frameDrop.pack(fill=X, padx=10, pady=5)
-		self.listboxDrop = Listbox(frameDrop, width=30, selectmode=EXTENDED)
-		self.listboxDrop.pack(side=LEFT, padx=5)
-		self.listboxDrop.delete(0, END)
-		for item in tableList:
-			self.listboxDrop.insert(END, item)
-		buttonDrop = ttk.Button(frameDrop, text='DropTable', width=15, command=self.tableDropFunction)
-		buttonDrop.pack(side=LEFT, padx=5)
-
-	def tableDropFunction(self):
-		for index in self.listboxDrop.curselection()[::-1]:
-			self.cursor.execute('DROP TABLE ' + str(self.listboxDrop.get(index)[0]))
-			self.listboxDrop.delete(index)
-		self.textB.delete(1.0, END)
-		self.textB.insert(1.0, 'Table Dropped!!')
-		f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-		f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tTable dropped.' + '\n')
-		f.close()
 
 def main():
 # Create window.
