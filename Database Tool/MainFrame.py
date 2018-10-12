@@ -129,7 +129,7 @@ class MainFrame(Frame):
 			self.db.close()
 			self.connCheck = True
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tDisconnected.\t\t\t\t\t\t[ ' + self.information['IP'] + ', '+ self.information['Port'] + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]' + '\n')
+			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tDisconnected.\t\t\t\t\t\t[ ' + self.information['IP'] + ', '+ self.information['Port'] + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]\n')
 			f.close()
 			for key in self.information.keys():
 				self.information[key] = ''
@@ -299,11 +299,11 @@ class MainFrame(Frame):
 			test.close()
 			self.connectionWindow.lift()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnection Tested.\t\t\t\t\t[ ' + self.entryAddr.get() + ', '+ self.entryPort.get() + ', ' + self.entrySid.get() + ', ' + self.entryID.get() + ', ' + self.entryPW.get() + ' ]' + '\n')
+			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnection Tested.\t\t\t\t\t[ ' + self.entryAddr.get() + ', '+ self.entryPort.get() + ', ' + self.entrySid.get() + ', ' + self.entryID.get() + ', ' + self.entryPW.get() + ' ]\n')
 			f.close()
 		except cx_Oracle.DatabaseError as e:
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnection Test Failed.\t\t\t\t[ ' + self.entryAddr.get() + ', '+ self.entryPort.get() + ', ' + self.entrySid.get() + ', ' + self.entryID.get() + ', ' + self.entryPW.get() + ' ]' + '\n')
+			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnection Test Failed.\t\t\t\t[ ' + self.entryAddr.get() + ', '+ self.entryPort.get() + ', ' + self.entrySid.get() + ', ' + self.entryID.get() + ', ' + self.entryPW.get() + ' ]\n')
 			f.close()
 			tkMessageBox.showwarning('Warning', e)
 			self.connectionWindow.lift()
@@ -323,7 +323,7 @@ class MainFrame(Frame):
 				self.buttonConnect.configure(text='Disconnect')
 				self.connCheck = False
 				f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-				f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnected.\t\t\t\t\t\t\t[ ' + self.information['IP'] + ', '+ self.information['Port'] + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]' + '\n')
+				f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnected.\t\t\t\t\t\t\t[ ' + self.information['IP'] + ', '+ self.information['Port'] + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]\n')
 				f.close()
 			self.connectionWindow.destroy()
 		except IOError:
@@ -331,7 +331,7 @@ class MainFrame(Frame):
 			self.connectionWindow.lift()
 		except cx_Oracle.DatabaseError as e:
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnection Failed.\t\t\t\t\t[ ' + self.information['IP'] + ', '+ self.information['Port'] + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]' + '\n')
+			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnection Failed.\t\t\t\t\t[ ' + self.information['IP'] + ', '+ self.information['Port'] + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]\n')
 			f.close()
 			tkMessageBox.showwarning('Warning', e)
 			self.connectionWindow.lift()
@@ -372,7 +372,7 @@ class MainFrame(Frame):
 					f.close()
 					self.aliasRead()
 					f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-					f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tAlias Registered.\t\t\t\t\t[ ' + self.entryAlias.get() + ' ]' + '\n')
+					f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tAlias Registered.\t\t\t\t\t[ ' + self.entryAlias.get() + ' ]\n')
 					f.close()
 			self.connectionWindow.lift()
 			self.aliasWindow.destroy()
@@ -394,7 +394,7 @@ class MainFrame(Frame):
 			f.close()
 			self.aliasRead()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tAlias Deleted.\t\t\t\t\t\t[ ' + self.comboAlias.get() + ' ]' + '\n')
+			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tAlias Deleted.\t\t\t\t\t\t[ ' + self.comboAlias.get() + ' ]\n')
 			f.close()
 			self.comboAlias['values'] = (['None'] + self.comboAliasValues.keys())
 			self.comboAlias.current(0)

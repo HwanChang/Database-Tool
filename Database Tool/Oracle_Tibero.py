@@ -33,7 +33,7 @@ class Oracle_Tibero:
 	def ED_ESFunction(self, name):
 		self.name = name
 		self.sheet = self.excel_document[name]
-		self.sendSQL[name] = []
+		self.sendSQL[name] = list()
 		self.tables = collections.OrderedDict()
 		self.commentsTables = collections.OrderedDict()
 		count = 0
@@ -59,46 +59,11 @@ class Oracle_Tibero:
 				continue
 			length = str()
 			korName = str()
-			effectiveLength = str()
-			sample = str()
-			description = str()
-			if list(self.sheet.rows)[0][8].value is not None:
-				if row[2].value is not None:
-					korName = row[2].value
-				if row[4].value is not None:
-					length = str(row[4].value)
-				if row[6].value is not None:
-					if isinstance(row[6].value, long):
-						effectiveLength = str(row[6].value)
-					else:
-						effectiveLength = row[6].value
-				if row[7].value is not None:
-					if not isinstance(row[7].value, long):
-						if not isinstance(row[7].value, datetime.datetime):
-							sample = row[7].value
-						else:
-							sample = str(row[7].value)
-					else:
-						sample = str(row[7].value)
-				if row[8].value is not None:
-					description = row[8].value
-				tableRows.append([str(row[1].value), korName, str(row[3].value), length, str(row[5].value), effectiveLength, sample, description])
-			else:
-				if row[2].value is not None:
-					korName = row[2].value
-				if row[4].value is not None:
-					length = str(row[4].value)
-				if row[6].value is not None:
-					if not isinstance(row[6].value, long):
-						if not isinstance(row[6].value, datetime.datetime):
-							sample = row[6].value
-						else:
-							sample = str(row[6].value)
-					else:
-						sample = str(row[6].value)
-				if row[7].value is not None:
-					description = row[7].value
-				tableRows.append([str(row[1].value), korName, str(row[3].value), length, str(row[5].value), '', sample, description])
+			if row[2].value is not None:
+				korName = row[2].value
+			if row[4].value is not None:
+				length = str(row[4].value)
+			tableRows.append([str(row[1].value), korName, str(row[3].value), length, str(row[5].value)])
 			if row == list(self.sheet.rows)[-1]:
 				self.tables[tableName[0]] = tableRows
 				self.commentsTables[tableName[0]] = tableName[1]
@@ -119,7 +84,7 @@ class Oracle_Tibero:
 							SQL += '\t' + row[0] + ' ' + row[2] + ' NOT NULL'
 						constraintName.append(row[0])
 						notNull = True
-						commentsColumns[tblName].append([row[0], row[1], row[4], row[5], row[6], row[7]])
+						commentsColumns[tblName].append([row[0], row[1]])
 					else:
 						if row[2] == 'int':
 							SQL += '\t' + row[0] + ' number PRIMARY KEY NOT NULL'
@@ -131,7 +96,7 @@ class Oracle_Tibero:
 							SQL += '\t' + row[0] + ' clob'
 						elif 'number' in row[2]:
 							SQL += '\t' + row[0] + ' ' + row[2] + ''
-						commentsColumns[tblName].append([row[0], row[1], row[4], row[5], row[6], row[7]])
+						commentsColumns[tblName].append([row[0], row[1]])
 				else:
 					if row[4] == 'Y':
 						if row[2] == 'int':
@@ -142,7 +107,7 @@ class Oracle_Tibero:
 							SQL += ', \n\t' + row[0] + ' ' + row[2] + '(' + row[3] + ') NOT NULL'
 						elif 'number' in row[2]:
 							SQL += ', \n\t' + row[0] + ' ' + row[2] + ' NOT NULL'
-						commentsColumns[tblName].append([row[0], row[1], row[4], row[5], row[6], row[7]])
+						commentsColumns[tblName].append([row[0], row[1]])
 						constraintName.append(row[0])
 						notNull = True
 					else:
@@ -156,7 +121,7 @@ class Oracle_Tibero:
 							SQL += ', \n\t' + row[0] + ' clob'
 						elif 'number' in row[2]:
 							SQL += ', \n\t' + row[0] + ' ' + row[2] + ''
-						commentsColumns[tblName].append([row[0], row[1], row[4], row[5], row[6], row[7]])
+						commentsColumns[tblName].append([row[0], row[1]])
 			if notNull:
 				constList = ''
 				for index_C, cont in enumerate(constraintName):
@@ -164,12 +129,12 @@ class Oracle_Tibero:
 						constList += cont + ', '
 					else:
 						constList += cont
-				SQL += ', \n\n\tCONSTRAINT UK_' + tblName.split('_')[1] + ' UNIQUE(' + constList +')'
+				SQL += ', \n\n\tCONSTRAINT UK_' + tblName.split('_')[1] + ' UNIQUE(' + constList + ')'
 			comments = list()
 			for comment in commentsColumns[tblName]:
 				if comment == commentsColumns[tblName][0]:
 					comments.append('COMMENT ON TABLE ' + tblName + " IS '" + self.commentsTables[tblName] + "'")
-				comments.append('COMMENT ON COLUMN ' + tblName + '.' + comment[0] + " IS '" + comment[1] + '__' + comment[2] + '__' + comment[3] + '__' + comment[4] + '__' + comment[5] + "'")
+				comments.append('COMMENT ON COLUMN ' + tblName + '.' + comment[0] + " IS '" + comment[1] + "'")
 			self.sendSQL[name].append(['CREATE TABLE ' + tblName + ' \n(\n' + SQL + '\n)\n', '\n\nCREATE SEQUENCE SEQ_' + tblName.split('_')[1] + ' \nINCREMENT BY 1\nSTART WITH 1\nNOMAXVALUE\nNOCYCLE\nNOCACHE\n', comments])
 	# Excel -> DB Scheme function
 		if self.info['Type'] == 'ED':
@@ -178,9 +143,8 @@ class Oracle_Tibero:
 			self.textB.delete(1.0, END)
 			self.info['Cursor'].execute('SELECT TABLE_NAME FROM tabs')
 			tab = self.info['Cursor'].fetchall()
-			self.info['Cursor'].execute('SELECT SEQUENCE_NAME FROM user_sequences ')
+			self.info['Cursor'].execute('SELECT SEQUENCE_NAME FROM user_sequences')
 			seq = self.info['Cursor'].fetchall()
-
 			if self.info['Drop'] == 1:
 				for send in self.sendSQL[name]:
 					for tName in tab:
@@ -200,17 +164,15 @@ class Oracle_Tibero:
 					if str(send[1].split(' ')[2]).upper() in dropS:
 						self.info['Cursor'].execute('DROP SEQUENCE ' + str(send[1].split(' ')[2]))
 					self.info['Cursor'].execute(send[1])
-					for sql in send[2]:
-						self.info['Cursor'].execute(sql)
 				else:
 					self.info['Cursor'].execute(send[0])
 					self.info['Cursor'].execute(send[1])
-					for sql in send[2]:
-						self.info['Cursor'].execute(sql)
+				for sql in send[2]:
+					self.info['Cursor'].execute(sql)
 			self.textB.insert(1.0, 'Excel -> DB Scheme Complete!')
 			self.info['Window'].destroy()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tExcel -> DB Scheme Function.\t\t[ ' + str(self.info['Path'].encode('euc-kr')) + ' ]' + '\n')
+			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tExcel -> DB Scheme Function.\t\t[ ' + str(self.info['Path'].encode('euc-kr')) + ' ]\n')
 			f.close()
 		elif self.info['Type'] == 'ES':
 			if self.info['Sheet'] == 'all':
@@ -347,7 +309,7 @@ class Oracle_Tibero:
 			self.textB.insert(END, self.entryPath_save.get())
 			self.info['Window'].destroy()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tExcel -> SQL File Function.\t\t\t[ ' + str(self.info['Path'].encode('euc-kr')) + ' -> ' + self.entryPath_save.get() + ' ]' + '\n')
+			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tExcel -> SQL File Function.\t\t\t[ ' + str(self.info['Path'].encode('euc-kr')) + ' -> ' + self.entryPath_save.get() + ' ]\n')
 			f.close()
 			self.saveWindow.destroy()
 		except IOError:
@@ -408,7 +370,7 @@ class Oracle_Tibero:
 			sheetmkNew['C' + str(lineCnt)].font = fontBold
 			lineCnt += 1
 			for sqllist in sqlList:
-				rowList.append([str(sqllist[0]), str(sqllist[1]), str(int(sqllist[2])), unicode(sqllist[3], '949')])
+				rowList.append([str(sqllist[0]), str(sqllist[1]), str(int(sqllist[2])), str(sqllist[3])])
 			for row in rowList:
 				if row == rowList[0]:
 					for rowC in sheetmkNew['B' + str(lineCnt) + ':I' + str(lineCnt)]:
@@ -426,22 +388,16 @@ class Oracle_Tibero:
 					if const[1] == row[0]:
 						if const[0] == 'P':
 							sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
-							sheetmkNew.cell(row=lineCnt, column=3).value = row[3].split('__')[0]
+							sheetmkNew.cell(row=lineCnt, column=3).value = unicode(row[3], '949')
 							sheetmkNew.cell(row=lineCnt, column=4).value = 'int'
 							sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
-							if row[3].split('__')[1] == 'None':
-								sheetmkNew.cell(row=lineCnt, column=6).value = ''
-							else:
-								sheetmkNew.cell(row=lineCnt, column=6).value = row[3].split('__')[1]
-							sheetmkNew.cell(row=lineCnt, column=7).value = row[3].split('__')[2]
-							sheetmkNew.cell(row=lineCnt, column=8).value = row[3].split('__')[3]
-							sheetmkNew.cell(row=lineCnt, column=9).value = row[3].split('__')[4]
+							sheetmkNew.cell(row=lineCnt, column=6).value = ''
 							lineCnt += 1
 							check = False
 							break
 						if const[0] == 'U':
 							sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
-							sheetmkNew.cell(row=lineCnt, column=3).value = row[3].split('__')[0]
+							sheetmkNew.cell(row=lineCnt, column=3).value = unicode(row[3], '949')
 							if lowerRow1 == 'varchar2':
 								sheetmkNew.cell(row=lineCnt, column=4).value = 'string'
 							elif lowerRow1 == 'clob':
@@ -449,19 +405,13 @@ class Oracle_Tibero:
 							else:
 								sheetmkNew.cell(row=lineCnt, column=4).value = lowerRow1
 							sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
-							if row[3].split('__')[1] == 'None':
-								sheetmkNew.cell(row=lineCnt, column=6).value = ''
-							else:
-								sheetmkNew.cell(row=lineCnt, column=6).value = row[3].split('__')[1]
-							sheetmkNew.cell(row=lineCnt, column=7).value = row[3].split('__')[2]
-							sheetmkNew.cell(row=lineCnt, column=8).value = row[3].split('__')[3]
-							sheetmkNew.cell(row=lineCnt, column=9).value = row[3].split('__')[4]
+							sheetmkNew.cell(row=lineCnt, column=6).value = 'Y'
 							lineCnt += 1
 							check = False
 							break
 				if check:
 					sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
-					sheetmkNew.cell(row=lineCnt, column=3).value = row[3].split('__')[0]
+					sheetmkNew.cell(row=lineCnt, column=3).value = unicode(row[3], '949')
 					if lowerRow1 == 'varchar2':
 						sheetmkNew.cell(row=lineCnt, column=4).value = 'string'
 					elif lowerRow1 == 'clob':
@@ -469,13 +419,7 @@ class Oracle_Tibero:
 					else:
 						sheetmkNew.cell(row=lineCnt, column=4).value = lowerRow1
 					sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
-					if row[3].split('__')[1] == 'None':
-						sheetmkNew.cell(row=lineCnt, column=6).value = ''
-					else:
-						sheetmkNew.cell(row=lineCnt, column=6).value = row[3].split('__')[1]
-					sheetmkNew.cell(row=lineCnt, column=7).value = row[3].split('__')[2]
-					sheetmkNew.cell(row=lineCnt, column=8).value = row[3].split('__')[3]
-					sheetmkNew.cell(row=lineCnt, column=9).value = row[3].split('__')[4]
+					sheetmkNew.cell(row=lineCnt, column=6).value = ''
 					lineCnt += 1
 			lineCnt += 1
 		try:
@@ -483,7 +427,7 @@ class Oracle_Tibero:
 			self.textB.insert(1.0, 'DB Scheme -> Excel Complete!\n\n')
 			self.textB.insert(END, self.DEentryPath.get())
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tDB Scheme -> Excel File Function.\t[ ' + self.DEentryPath.get() + ' ]' + '\n')
+			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tDB Scheme -> Excel File Function.\t[ ' + self.DEentryPath.get() + ' ]\n')
 			f.close()
 			self.DEWindow.destroy()
 		except IOError:
@@ -497,19 +441,17 @@ class Oracle_Tibero:
 			for index in self.listboxDS.curselection():
 				tableName = str(self.listboxDS.get(index)[0])
 				checkNull = False
-				self.info['Cursor'].execute("SELECT COLUMN_NAME, DATA_TYPE, DATA_LENGTH FROM USER_TAB_COLUMNS WHERE TABLE_NAME = '" + tableName + "'")
+				self.info['Cursor'].execute("SELECT U.COLUMN_NAME, U.DATA_TYPE, U.DATA_LENGTH, A.COMMENTS FROM USER_TAB_COLUMNS U, ALL_COL_COMMENTS A WHERE U.COLUMN_NAME = A.COLUMN_NAME AND U.TABLE_NAME = '" + tableName + "' AND A.TABLE_NAME = '" + tableName + "'")
 				sqlList = self.info['Cursor'].fetchall()
 				self.info['Cursor'].execute("SELECT S.CONSTRAINT_TYPE, C.COLUMN_NAME FROM USER_CONS_COLUMNS C INNER JOIN USER_CONSTRAINTS S ON C.CONSTRAINT_NAME = S.CONSTRAINT_NAME AND (S.CONSTRAINT_TYPE = 'P' OR S.CONSTRAINT_TYPE = 'U') WHERE C.TABLE_NAME = '" + tableName + "' ORDER BY 1")
 				constraintList = self.info['Cursor'].fetchall()
 				self.info['Cursor'].execute("SELECT COMMENTS FROM USER_TAB_COMMENTS WHERE TABLE_NAME = '" + tableName + "'")
 				tableComment = self.info['Cursor'].fetchall()
-				self.info['Cursor'].execute("SELECT COLUMN_NAME, COMMENTS FROM ALL_COL_COMMENTS WHERE TABLE_NAME = '" + tableName + "'")
-				columnComments = self.info['Cursor'].fetchall()
 				SQLsentence = 'CREATE TABLE ' + tableName + ' \n(\n'
 				rowList = list()
 				constraintName = list()
 				for sqllist in sqlList:
-					rowList.append([str(sqllist[0]), str(sqllist[1]), str(int(sqllist[2]))])
+					rowList.append([str(sqllist[0]), str(sqllist[1]), str(int(sqllist[2])), str(sqllist[3])])
 				for row in rowList:
 					flag = True
 					if row == rowList[-1]:
@@ -557,8 +499,8 @@ class Oracle_Tibero:
 					SQLsentence += ',\n\n\tCONSTRAINT UK_' + str(self.listboxDS.get(index)[0]).split('_')[1] + ' UNIQUE(' + constList + ')'
 				SQLsentence = SQLsentence + '\n)\n;\n\nCREATE SEQUENCE SEQ_' + tableName.split('_')[1] + ' \nINCREMENT BY 1\nSTART WITH 1\nNOMAXVALUE\nNOCYCLE\nNOCACHE\n;\n\n'
 				cCStr = str()
-				for cC in columnComments:
-					cCStr += 'COMMENT ON COLUMN ' + tableName + '.' + cC[0] + " IS '" + cC[1] + "';\n\n"
+				for cC in rowList:
+					cCStr += 'COMMENT ON COLUMN ' + tableName + '.' + cC[0] + " IS '" + cC[3] + "';\n\n"
 				writeSQLsentence += SQLsentence + 'COMMENT ON TABLE ' + tableName + " IS '" + tableComment[0][0] + "';\n\n" + cCStr
 			f = open(self.DSentryPath.get(), 'w')
 			f.write(writeSQLsentence)
@@ -566,7 +508,7 @@ class Oracle_Tibero:
 			self.textB.insert(1.0, 'DB Scheme -> SQL File Complete!\n\n')
 			self.textB.insert(END, self.DSentryPath.get())
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tDB Scheme -> SQL File Function.\t\t[ ' + self.DSentryPath.get() + ' ]' + '\n')
+			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tDB Scheme -> SQL File Function.\t\t[ ' + self.DSentryPath.get() + ' ]\n')
 			f.close()
 			self.DSWindow.destroy()
 		except IOError:
