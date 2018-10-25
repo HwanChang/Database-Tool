@@ -146,40 +146,36 @@ class MySQL:
 			self.sendSQL[name].append(['CREATE TABLE ' + tblName + ' \n(\n' + SQL + "\n) COMMENT '" + str(self.commentsTables[tblName]) + "'\n\nCOLLATE='utf8_bin'\nENGINE=InnoDB\n"])
 	# Excel -> DB Scheme function.
 		if self.info['Type'] == 'ED':
-			try:
-				if self.info['Drop'] == 1:
-					for send in self.sendSQL[self.name]:
-						for tName in self.tab:
-							if tName[0] == str(send[0].split(' ')[2]):
-								self.dropT.append(tName[0])
-								break
+			if self.info['Drop'] == 1:
 				for send in self.sendSQL[self.name]:
-					if self.info['Drop'] == 1:
-						if str(send[0].split(' ')[2]) in self.dropT:
-							self.info['Cursor'].execute('DROP TABLE ' + str(send[0].split(' ')[2]))
-						self.info['Cursor'].execute(send[0])
-					else:
-						self.info['Cursor'].execute(send[0])
-				if name == self.realList[-1]:
-					self.info['Thread'].statusCheck = False
-					self.info['Status'].join()
-					self.textB.delete(1.0, END)
-					self.textB.insert(1.0, 'Excel File -> DB Scheme Complete!\n\n')
-					f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel File -> DB Scheme Function.' + "%-60s" % ('[ ' + self.info['Path']) + ' ]\n')
-					f.close()
-					with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
-						lines = f.readlines()
-						if len(lines) > 20:
-							for i in range(0, len(lines)-20):
-								del lines[0]
-						for line in lines:
-							self.textB.insert(END, line)
-					self.textB.config(state=DISABLED)
-			except pymysql.InternalError as e:
-				code, message = e.args
-				if code == 1050:
-					messagebox.showwarning('Warning', 'Please check the DB.\nThe table name is already used.')
+					for tName in self.tab:
+						if tName[0] == str(send[0].split(' ')[2]):
+							self.dropT.append(tName[0])
+							break
+			for send in self.sendSQL[self.name]:
+				if self.info['Drop'] == 1:
+					if str(send[0].split(' ')[2]) in self.dropT:
+						self.info['Cursor'].execute('DROP TABLE ' + str(send[0].split(' ')[2]))
+					self.info['Cursor'].execute(send[0])
+				else:
+					self.info['Cursor'].execute(send[0])
+			if name == self.realList[-1]:
+				self.info['Thread'].statusCheck = False
+				self.info['Status'].join()
+				self.textB.delete(1.0, END)
+				self.textB.insert(1.0, 'Excel File -> DB Scheme Complete!\n\n')
+				f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+				f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel File -> DB Scheme Function.' + "%-60s" % ('[ ' + self.info['Path']) + ' ]\n')
+				f.close()
+				with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+					lines = f.readlines()
+					if len(lines) > 20:
+						for i in range(0, len(lines)-20):
+							del lines[0]
+					for line in lines:
+						self.textB.insert(END, line)
+				self.textB.config(state=DISABLED)
+
 	# Excel -> SQL File Function.
 		elif self.info['Type'] == 'ES' and name == self.realList[-1]:
 			self.Excel_SQLFunction()

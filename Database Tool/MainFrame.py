@@ -183,7 +183,8 @@ class MainFrame(Frame):
 		f.close()
 		self.comboAliasValues = collections.OrderedDict()
 		for aliasList in lines:
-			self.comboAliasValues[aliasList.split('*')[0]] = aliasList.split('*')[1].split('^')
+			if aliasList.split('*')[2] == self.comboDBMS.get():
+				self.comboAliasValues[aliasList.split('*')[0]] = aliasList.split('*')[1].split('^')
 		self.comboAlias['values'] = (['None'] + list(self.comboAliasValues.keys()))
 
 # Combobox selection event.
@@ -249,42 +250,9 @@ class MainFrame(Frame):
 		self.DBinfo['sid'] = self.information['sid']
 		self.pathWindow.destroy()
 		if self.chk.get() == 0:
-			try:
-				self.callThread()
-			except IOError:
-				self.DBinfo['Progress'].stop()
-				messagebox.showwarning('Warning','Please select a Excel file.')
-				self.pathWindow.lift()
-			except cx_Oracle.DatabaseError as e:
-				self.DBinfo['Progress'].stop()
-				error, = e.args
-				if error.code == 942:
-					messagebox.showwarning('Warning','There is no Table to drop.')
-					self.pathWindow.lift()
-				elif error.code == 955:
-					messagebox.showwarning('Warning', 'Please check the DB.\nThe table name is already used.')
-					self.pathWindow.lift()
-				elif error.code == 12569:
-					messagebox.showwarning('Warning', 'Please check the DBMS.')
-					self.pathWindow.lift()
-			except pymysql.InternalError as e:
-				self.status.stopFunction(False)
-				self.DBinfo['Progress'].stop()
-				code, message = e.args
-				print (code, message)
-				if code == 1050:
-					messagebox.showwarning('Warning', 'Please check the DB.\nThe table name is already used.')
-					self.pathWindow.lift()
+			self.callThread()
 		else:
-			try:
-				self.callThread()
-			except cx_Oracle.DatabaseError as e:
-				self.status.stopFunction(False)
-				self.DBinfo['Progress'].stop()
-				error, = e.args
-				if error.code == 942:
-					messagebox.showwarning('Warning','There is no Table to drop.')
-					self.pathWindow.lift()
+			self.callThread()
 
 	def clickES(self):
 	# File path.
@@ -321,32 +289,26 @@ class MainFrame(Frame):
 		labelSheetES.pack(side=RIGHT, padx=5)
 
 	def clickES_S(self):
-		try:
-			self.DBinfo['Sheet'] = self.comboSheet.get()
-			self.DBinfo['Path'] =  self.entryPath.get()
-			self.DBinfo['Type'] = 'ES'
-			self.saveWindow = Toplevel()
-			self.saveWindow.title('SQL File')
-			self.saveWindow.geometry('600x100+200+200')
-			self.saveWindow.resizable(False, False)
-		# File save path.
-			frame_save = Frame(self.saveWindow)
-			frame_save.pack(fill=X, padx=10, pady=10)
+		self.DBinfo['Sheet'] = self.comboSheet.get()
+		self.DBinfo['Path'] =  self.entryPath.get()
+		self.DBinfo['Type'] = 'ES'
+		self.saveWindow = Toplevel()
+		self.saveWindow.title('SQL File')
+		self.saveWindow.geometry('600x100+200+200')
+		self.saveWindow.resizable(False, False)
+	# File save path.
+		frame_save = Frame(self.saveWindow)
+		frame_save.pack(fill=X, padx=10, pady=10)
 
-			lablePath_save = Label(frame_save, text='Path', width=5)
-			lablePath_save.pack(side=LEFT, padx=5)
-			self.entryPath_save = ttk.Entry(frame_save)
-			self.entryPath_save.pack(side=LEFT, fill=X, padx=5, expand=True)
-			buttonPath_save = ttk.Button(frame_save, text='path', command=self.pathESFunction)
-			buttonPath_save.pack(side=LEFT, padx=5)
-			buttonSave_save = ttk.Button(frame_save, text='save', command=self.callThread)
-			buttonSave_save.pack(side=RIGHT, padx=5, pady=5)
-			self.saveWindow.mainloop()
-
-		except IOError:
-			self.DBinfo['Progress'].stop()
-			messagebox.showwarning('Warning','Please select a Excel file.')
-			self.pathWindow.lift()
+		lablePath_save = Label(frame_save, text='Path', width=5)
+		lablePath_save.pack(side=LEFT, padx=5)
+		self.entryPath_save = ttk.Entry(frame_save)
+		self.entryPath_save.pack(side=LEFT, fill=X, padx=5, expand=True)
+		buttonPath_save = ttk.Button(frame_save, text='path', command=self.pathESFunction)
+		buttonPath_save.pack(side=LEFT, padx=5)
+		buttonSave_save = ttk.Button(frame_save, text='save', command=self.callThread)
+		buttonSave_save.pack(side=RIGHT, padx=5, pady=5)
+		self.saveWindow.mainloop()
 
 	def clickDE(self):
 		if self.connCheck:
@@ -356,48 +318,44 @@ class MainFrame(Frame):
 			self.DBinfo['Progress'].stop()
 			self.DBinfo['Type'] = 'DE'
 			self.DBinfo['sid'] = self.information['sid']
-			try:
-				if self.comboDBMS.get() == 'Oracle / Tibero':
-					self.DBinfo['Cursor'].execute('SELECT TABLE_NAME FROM tabs')
-					tableList = self.DBinfo['Cursor'].fetchall()
-					tableList.reverse()
-				elif self.comboDBMS.get() == 'MySQL / MariaDB':
-					self.DBinfo['Cursor'].execute('SHOW tables')
-					tableList = list(self.DBinfo['Cursor'].fetchall())
-				elif self.comboDBMS.get() == 'MS-SQL':
-					self.DBinfo['Cursor'].execute('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES')
-					tableList = list(self.DBinfo['Cursor'].fetchall())
-				self.DEWindow = Toplevel()
-				self.DEWindow.title('DB Scheme -> Excel')
-				self.DEWindow.geometry('600x200+200+200')
-				self.DEWindow.resizable(False, False)
+			if self.comboDBMS.get() == 'Oracle / Tibero':
+				self.DBinfo['Cursor'].execute('SELECT TABLE_NAME FROM tabs')
+				tableList = self.DBinfo['Cursor'].fetchall()
+				tableList.reverse()
+			elif self.comboDBMS.get() == 'MySQL / MariaDB':
+				self.DBinfo['Cursor'].execute('SHOW tables')
+				tableList = list(self.DBinfo['Cursor'].fetchall())
+			elif self.comboDBMS.get() == 'MS-SQL':
+				self.DBinfo['Cursor'].execute('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES')
+				tableList = list(self.DBinfo['Cursor'].fetchall())
+			self.DEWindow = Toplevel()
+			self.DEWindow.title('DB Scheme -> Excel')
+			self.DEWindow.geometry('600x200+200+200')
+			self.DEWindow.resizable(False, False)
 
-				frame_DE = Frame(self.DEWindow)
-				frame_DE.pack(fill=X, padx=10, pady=10)
-				DElablePath = Label(frame_DE, text='Path', width=5)
-				DElablePath.pack(side=LEFT, padx=5)
-				self.DEentryPath = ttk.Entry(frame_DE)
-				self.DEentryPath.pack(side=LEFT, fill=X, padx=5, expand=True)
-				DEbuttonPath = ttk.Button(frame_DE, text='path', command=self.pathDEFunction)
-				DEbuttonPath.pack(side=LEFT, padx=5)
+			frame_DE = Frame(self.DEWindow)
+			frame_DE.pack(fill=X, padx=10, pady=10)
+			DElablePath = Label(frame_DE, text='Path', width=5)
+			DElablePath.pack(side=LEFT, padx=5)
+			self.DEentryPath = ttk.Entry(frame_DE)
+			self.DEentryPath.pack(side=LEFT, fill=X, padx=5, expand=True)
+			DEbuttonPath = ttk.Button(frame_DE, text='path', command=self.pathDEFunction)
+			DEbuttonPath.pack(side=LEFT, padx=5)
 
-				frame_DE2 = Frame(self.DEWindow)
-				frame_DE2.pack(fill=X, padx=10, pady=5)
-				DEbuttonSave_save = ttk.Button(frame_DE2, text='save', command=self.callThread)
-				DEbuttonSave_save.pack(side=RIGHT, padx=5, pady=5)
-				self.listboxDE = Listbox(frame_DE2, width=30, selectmode=EXTENDED)
-				self.listboxDE.pack(side=RIGHT, padx=5)
-				self.listboxDE.delete(0, END)
-				for item in tableList:
-					self.listboxDE.insert(END, item)
-				labelSheet = Label(frame_DE2, text='Sheet', width=5)
-				labelSheet.pack(side=LEFT, padx=5, pady=5)
-				self.entrySheet = ttk.Entry(frame_DE2, width=20)
-				self.entrySheet.pack(side=LEFT, padx=5, pady=5)
-				self.DEWindow.mainloop()
-			except cx_Oracle.DatabaseError:
-				self.DBinfo['Progress'].stop()
-				messagebox.showwarning('Warning','Please check the DBConnection informations.')
+			frame_DE2 = Frame(self.DEWindow)
+			frame_DE2.pack(fill=X, padx=10, pady=5)
+			DEbuttonSave_save = ttk.Button(frame_DE2, text='save', command=self.callThread)
+			DEbuttonSave_save.pack(side=RIGHT, padx=5, pady=5)
+			self.listboxDE = Listbox(frame_DE2, width=30, selectmode=EXTENDED)
+			self.listboxDE.pack(side=RIGHT, padx=5)
+			self.listboxDE.delete(0, END)
+			for item in tableList:
+				self.listboxDE.insert(END, item)
+			labelSheet = Label(frame_DE2, text='Sheet', width=5)
+			labelSheet.pack(side=LEFT, padx=5, pady=5)
+			self.entrySheet = ttk.Entry(frame_DE2, width=20)
+			self.entrySheet.pack(side=LEFT, padx=5, pady=5)
+			self.DEWindow.mainloop()
 
 	def clickDS(self):
 		if self.connCheck:
@@ -407,44 +365,40 @@ class MainFrame(Frame):
 			self.DBinfo['Progress'].stop()
 			self.DBinfo['Type'] = 'DS'
 			self.DBinfo['sid'] = self.information['sid']
-			try:
-				if self.comboDBMS.get() == 'Oracle / Tibero':
-					self.DBinfo['Cursor'].execute('SELECT TABLE_NAME FROM tabs')
-					tableList = self.DBinfo['Cursor'].fetchall()
-					tableList.reverse()
-				elif self.comboDBMS.get() == 'MySQL / MariaDB':
-					self.DBinfo['Cursor'].execute('SHOW tables')
-					tableList = list(self.DBinfo['Cursor'].fetchall())
-				elif self.comboDBMS.get() == 'MS-SQL':
-					self.DBinfo['Cursor'].execute('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES')
-					tableList = list(self.DBinfo['Cursor'].fetchall())
-				self.DSWindow = Toplevel()
-				self.DSWindow.title('DB Scheme -> SQL File')
-				self.DSWindow.geometry('600x200+200+200')
-				self.DSWindow.resizable(False, False)
+			if self.comboDBMS.get() == 'Oracle / Tibero':
+				self.DBinfo['Cursor'].execute('SELECT TABLE_NAME FROM tabs')
+				tableList = self.DBinfo['Cursor'].fetchall()
+				tableList.reverse()
+			elif self.comboDBMS.get() == 'MySQL / MariaDB':
+				self.DBinfo['Cursor'].execute('SHOW tables')
+				tableList = list(self.DBinfo['Cursor'].fetchall())
+			elif self.comboDBMS.get() == 'MS-SQL':
+				self.DBinfo['Cursor'].execute('SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES')
+				tableList = list(self.DBinfo['Cursor'].fetchall())
+			self.DSWindow = Toplevel()
+			self.DSWindow.title('DB Scheme -> SQL File')
+			self.DSWindow.geometry('600x200+200+200')
+			self.DSWindow.resizable(False, False)
 
-				frame_DS = Frame(self.DSWindow)
-				frame_DS.pack(fill=X, padx=10, pady=10)
-				DSlablePath = Label(frame_DS, text='Path', width=5)
-				DSlablePath.pack(side=LEFT, padx=5)
-				self.DSentryPath = ttk.Entry(frame_DS)
-				self.DSentryPath.pack(side=LEFT, fill=X, padx=5, expand=True)
-				DSbuttonPath = ttk.Button(frame_DS, text='path', command=self.pathDSFunction)
-				DSbuttonPath.pack(side=LEFT, padx=5)
+			frame_DS = Frame(self.DSWindow)
+			frame_DS.pack(fill=X, padx=10, pady=10)
+			DSlablePath = Label(frame_DS, text='Path', width=5)
+			DSlablePath.pack(side=LEFT, padx=5)
+			self.DSentryPath = ttk.Entry(frame_DS)
+			self.DSentryPath.pack(side=LEFT, fill=X, padx=5, expand=True)
+			DSbuttonPath = ttk.Button(frame_DS, text='path', command=self.pathDSFunction)
+			DSbuttonPath.pack(side=LEFT, padx=5)
 
-				frame_DS2 = Frame(self.DSWindow)
-				frame_DS2.pack(fill=X, padx=10, pady=5)
-				DSbuttonSave_save = ttk.Button(frame_DS2, text='save', command=self.callThread)
-				DSbuttonSave_save.pack(side=RIGHT, padx=5, pady=5)
-				self.listboxDS = Listbox(frame_DS2, width=50, selectmode=EXTENDED)
-				self.listboxDS.pack(side=RIGHT, padx=5)
-				self.listboxDS.delete(0, END)
-				for item in tableList:
-					self.listboxDS.insert(END, item)
-				self.DSWindow.mainloop()
-			except cx_Oracle.DatabaseError:
-				self.DBinfo['Progress'].stop()
-				messagebox.showwarning('Warning','Please check the DBConnection informations.')
+			frame_DS2 = Frame(self.DSWindow)
+			frame_DS2.pack(fill=X, padx=10, pady=5)
+			DSbuttonSave_save = ttk.Button(frame_DS2, text='save', command=self.callThread)
+			DSbuttonSave_save.pack(side=RIGHT, padx=5, pady=5)
+			self.listboxDS = Listbox(frame_DS2, width=50, selectmode=EXTENDED)
+			self.listboxDS.pack(side=RIGHT, padx=5)
+			self.listboxDS.delete(0, END)
+			for item in tableList:
+				self.listboxDS.insert(END, item)
+			self.DSWindow.mainloop()
 
 	def callThread(self):
 		self.textB.config(state=NORMAL)
@@ -487,19 +441,17 @@ class MainFrame(Frame):
 				MySQL.MySQL(self.DBinfo, self.textB)
 			elif self.comboDBMS.get() == 'MS-SQL':
 				MSSQL.MSSQL(self.DBinfo, self.textB)
-		except pymssql.OperationalError as e:
-			self.status.statusCheck = False
+		except (cx_Oracle.DatabaseError, pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError, pymysql.err.InternalError) as e:
+			self.DBinfo['Thread'].stopFunction(False)
 			self.DBinfo['Progress'].stop()
-			code, message = e.args
-			if code == 2714:
-				messagebox.showwarning('Warning', 'Please check the DB.\nThe table name is already used.')
+			messagebox.showwarning('Warning', e)
 
 	def connectionTestFunction(self):
 		self.textB.config(state=NORMAL)
 		try:
 			testThread = threading.Thread(target=self.connectionTestThread)
 			testThread.start()
-		except cx_Oracle.DatabaseError as e:
+		except (cx_Oracle.DatabaseError, pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError) as e:
 			self.DBinfo['Progress'].stop()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
 			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Test Failed.' + "%-69s" % ('[ ' + self.entryAddr.get() + ', '+ self.entryPort.get()) + ' ]\n')
@@ -539,13 +491,9 @@ class MainFrame(Frame):
 				for line in lines:
 					self.textB.insert(END, line)
 			self.textB.config(state=DISABLED)
-		except cx_Oracle.DatabaseError as e:
-			error, = e.args
-			if error.code == 12533:
-				messagebox.showwarning('Warning', e)
-		except (pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError) as e:
+		except (cx_Oracle.DatabaseError, pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError) as e:
 			messagebox.showwarning('Warning', e)
-		except (IOError,ValueError):
+		except (IOError, ValueError):
 			messagebox.showwarning('Warning', 'Please fill out the all information.')
 			self.connectionWindow.lift()
 	def connectionFunction(self):
@@ -566,7 +514,7 @@ class MainFrame(Frame):
 			self.statusTh.start()
 			connThread = threading.Thread(target=self.ConnectThread)
 			connThread.start()
-		except (IOError,ValueError):
+		except (IOError, ValueError):
 			self.DBinfo['Progress'].stop()
 			messagebox.showwarning('Warning', 'Please fill out the all information.')
 			self.connectionWindow.lift()
@@ -607,27 +555,7 @@ class MainFrame(Frame):
 					for line in lines:
 						self.textB.insert(END, line)
 				self.textB.config(state=DISABLED)
-		except cx_Oracle.DatabaseError as e:
-			self.status.stopFunction(False)
-			self.DBinfo['Progress'].stop()
-			error, = e.args
-			if error.code == 12569:
-				messagebox.showwarning('Warning', 'Please check the DBMS.')
-			else:
-				messagebox.showwarning('Warning', e)
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Failed.' + "%-69s" % ('[ ' + self.information['IP'] + ', '+ self.information['Port']) + ' ]\n')
-			f.close()
-			self.textB.delete(1.0, END)
-			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
-				lines = f.readlines()
-				if len(lines) > 20:
-					for i in range(0, len(lines)-20):
-						del lines[0]
-				for line in lines:
-					self.textB.insert(END, line)
-			self.textB.config(state=DISABLED)
-		except (pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError, ConnectionResetError)as e:
+		except (cx_Oracle.DatabaseError, pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError, ConnectionResetError)as e:
 			self.status.stopFunction(False)
 			self.DBinfo['Progress'].stop()
 			messagebox.showwarning('Warning', e)
@@ -673,7 +601,7 @@ class MainFrame(Frame):
 				if self.entryAlias.get() in self.comboAliasValues.keys():
 					messagebox.showwarning('Warning', 'The alias name is already in use.')
 				else:
-					content = self.entryAlias.get() + '*' + self.information['IP'] + '^' + self.information['Port'] + '^' + self.information['sid'] + '^' + self.information['ID'] + '^' + self.information['PW'] + '*' + str(datetime.datetime.now()) + '\n'
+					content = self.entryAlias.get() + '*' + self.information['IP'] + '^' + self.information['Port'] + '^' + self.information['sid'] + '^' + self.information['ID'] + '^' + self.information['PW'] + '*' + self.comboDBMS.get() + '*' + str(datetime.datetime.now()) + '\n'
 					self.comboAlias['values'] = (['None'] + list(self.comboAliasValues.keys()))
 					self.comboAlias.set(self.entryAlias.get())
 					f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\alias\\alias.txt', 'a')
@@ -694,8 +622,6 @@ class MainFrame(Frame):
 			self.connectionWindow.lift()
 			self.aliasWindow.destroy()
 		except IOError:
-			self.status.stopFunction(False)
-			self.DBinfo['Progress'].stop()
 			self.aliasWindow.destroy()
 			messagebox.showwarning('Warning', 'Please fill out the all information.')
 			self.connectionWindow.lift()
@@ -703,14 +629,15 @@ class MainFrame(Frame):
 	def aliasDeleteFunction(self):
 		if self.comboAlias.get() != 'None':
 			self.textB.config(state=NORMAL)
-			content = ''
-			if self.comboAlias.get() in self.comboAliasValues:
-				del self.comboAliasValues[self.comboAlias.get()]
-			KeyValue = self.comboAliasValues.items()
-			for cnt in KeyValue:
-				content += cnt[0] +  '*' + cnt[1][0] + '^' + cnt[1][1] + '^' + cnt[1][2] + '^' + cnt[1][3] + '^' + cnt[1][4] + '*' + str(datetime.datetime.now()) + '\n'
+			content = str()
+			writeList = list()
+			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\alias\\alias.txt', 'r')
+			lines = f.readlines()
+			f.close()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\alias\\alias.txt', 'w')
-			f.write(content)
+			for line in lines:
+				if self.comboAlias.get() != line.split('*')[0]:
+					f.write(line)
 			f.close()
 			self.aliasRead()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
