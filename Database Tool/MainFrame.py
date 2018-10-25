@@ -156,7 +156,7 @@ class MainFrame(Frame):
 			self.db.close()
 			self.connCheck = True
 			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tDisconnected. (' + self.comboDBMS.get() + ')') + '[ ' + "%-67s" % (self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\t(' + self.comboDBMS.get() + ') Disconnected.') + '[ ' + "%-67s" % (self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
 			f.close()
 			for key in self.information.keys():
 				self.information[key] = ''
@@ -453,7 +453,7 @@ class MainFrame(Frame):
 		except (cx_Oracle.DatabaseError, pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError) as e:
 			self.DBinfo['Progress'].stop()
 			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Test Failed.' + "%-69s" % ('[ ' + self.entryAddr.get() + ', '+ self.entryPort.get()) + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\t(' + self.comboDBMS.get() + ') Connection Test Failed.') + "%-69s" % ('[ ' + self.entryAddr.get() + ', '+ self.entryPort.get()) + ' ]\n')
 			f.close()
 			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
@@ -480,7 +480,7 @@ class MainFrame(Frame):
 			messagebox.showinfo('info', 'Connection complete.')
 			self.connectionWindow.lift()
 			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Tested.' + "%-69s" % ('[ ' + self.entryAddr.get() + ', '+ self.entryPort.get()) + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\t(' + self.comboDBMS.get() + ') Connection Tested.') + "%-69s" % ('[ ' + self.entryAddr.get() + ', '+ self.entryPort.get()) + ' ]\n')
 			f.close()
 			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
@@ -540,11 +540,11 @@ class MainFrame(Frame):
 				self.connCheck = False
 				f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 				if self.comboDBMS.get() == 'Oracle / Tibero':
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tConnected.    (' + self.comboDBMS.get() + ')') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ self.information['Port']) + ' ]\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\t(' + self.comboDBMS.get() + ') Connected.') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ self.information['Port']) + ' ]\n')
 				elif self.comboDBMS.get() == 'MySQL / MariaDB':
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tConnected.    (' + self.comboDBMS.get() + ')') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\t(' + self.comboDBMS.get() + ') Connected.') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
 				elif self.comboDBMS.get() == 'MS-SQL':
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tConnected.    (' + self.comboDBMS.get() + ')') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\t(' + self.comboDBMS.get() + ') Connected.') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
 				f.close()
 				with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 					lines = f.readlines()
@@ -559,7 +559,7 @@ class MainFrame(Frame):
 			self.DBinfo['Progress'].stop()
 			messagebox.showwarning('Warning', e)
 			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Failed.' + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\t(' + self.comboDBMS.get() + ') Connection Failed.') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
 			f.close()
 			self.textB.delete(1.0, END)
 			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
@@ -608,7 +608,7 @@ class MainFrame(Frame):
 					f.close()
 					self.aliasRead()
 					f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tAlias Registered.' + "%-69s" % ('[ ' + self.entryAlias.get()) + ' ]\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\t(' + self.comboDBMS.get() + ') Alias Registered.') + "%-69s" % ('[ ' + self.entryAlias.get()) + ' ]\n')
 					f.close()
 					with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 						lines = f.readlines()
@@ -638,7 +638,7 @@ class MainFrame(Frame):
 						f.write(line)
 			self.aliasRead()
 			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tAlias Deleted.' + "%-69s" % ('[ ' + self.comboAlias.get()) + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\t(' + self.comboDBMS.get() + ') Alias Deleted.') + "%-69s" % ('[ ' + self.comboAlias.get()) + ' ]\n')
 			f.close()
 			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
