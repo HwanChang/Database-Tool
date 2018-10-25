@@ -2,7 +2,8 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
-import openpyxl, cx_Oracle, pymysql, pymssql, Oracle_Tibero, MySQL, MSSQL, datetime, threading, collections, PIL
+from time import sleep
+import openpyxl, cx_Oracle, pymysql, pymssql, Oracle_Tibero, MySQL, MSSQL, Status, datetime, threading, collections, PIL
 
 class MainFrame(Frame):
 	def __init__(self, master):
@@ -13,6 +14,7 @@ class MainFrame(Frame):
 		self.information = {}
 		self.DBinfo = {}
 		self.connCheck = True
+		self.datetime = datetime.datetime.now()
 
 	# Select DBMS.
 		frame1 = Frame(self)
@@ -21,12 +23,14 @@ class MainFrame(Frame):
 		labelDBMS = Label(frame1, text='DBMS', width=10)
 		labelDBMS.pack(side=LEFT, padx=10, pady=10)
 		self.comboDBMS = ttk.Combobox(frame1, width=20)
-		self.comboDBMS['values'] = ('Oracle / Tibero', 'Altibase', 'MS-SQL', 'MySQL / MariaDB')
+		self.comboDBMS['values'] = ('Oracle / Tibero', 'MS-SQL', 'MySQL / MariaDB')
 		self.comboDBMS.current(0)
 		self.comboDBMS.config(state='readonly')
 		self.comboDBMS.pack(side=LEFT, pady=10)
 		self.buttonConnect = ttk.Button(frame1, text='Connect', command=self.connectFunction)
 		self.buttonConnect.pack(side=LEFT, padx=20)
+		buttonLog = ttk.Button(frame1, text='Log', command=self.logFunction)
+		buttonLog.pack(side=LEFT)
 
 	# Function button.
 		frame6 = Frame(self)
@@ -48,6 +52,8 @@ class MainFrame(Frame):
 
 		self.DBinfo['Progress'] = ttk.Progressbar(frame7, orient=HORIZONTAL, mode='determinate')
 		self.DBinfo['Progress'].pack(fill=BOTH)
+		self.DBinfo['Percent'] = Label(frame7, width=15)
+		self.DBinfo['Percent'].pack(side=RIGHT, padx=5, pady=5)
 
 	# State of progress.
 		frame8 = Frame(self)
@@ -58,6 +64,14 @@ class MainFrame(Frame):
 		self.textB = Text(frame8)
 		self.textB.pack(fill=BOTH, expand=1)
 		self.textB.config(yscrollcommand=scrollbar.set)
+		with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			lines = f.readlines()
+			if len(lines) > 20:
+				for i in range(0, len(lines)-20):
+					del lines[0]
+			for line in lines:
+				self.textB.insert(END, line)
+		self.textB.config(state=DISABLED)
 		scrollbar.config(command=self.textB.yview)
 
 # MainFrame excel file open.
@@ -74,7 +88,6 @@ class MainFrame(Frame):
 
 # DB Connection function.
 	def connectFunction(self):
-		self.textB.delete(1.0, END)
 		if self.connCheck:
 			self.connectionWindow = Toplevel()
 			self.connectionWindow.title('DB Connection')
@@ -138,28 +151,38 @@ class MainFrame(Frame):
 			self.comboAlias.config(state='readonly')
 			self.comboAlias.bind("<<ComboboxSelected>>", self.comboSelection)
 			self.comboAlias.pack(side=LEFT, pady=10)
-
 		else:
+			self.textB.config(state=NORMAL)
+			self.datetime = datetime.datetime.now()
 			self.db.close()
 			self.connCheck = True
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tDisconnected.\t\t\t\t\t\t[ ' + self.information['IP'] + ', '+ str(self.information['Port']) + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tDisconnected. (' + self.comboDBMS.get() + ')') + '[ ' + "%-67s" % (self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
 			f.close()
 			for key in self.information.keys():
 				self.information[key] = ''
 			self.DBinfo['Progress'].stop()
 			self.textB.delete(1.0, END)
-			self.textB.insert(1.0, 'Database Disconnected!!')
+			self.textB.insert(1.0, 'Database Disconnected!!\n\n')
+			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				lines = f.readlines()
+				if len(lines) > 20:
+					for i in range(0, len(lines)-20):
+						del lines[0]
+				for line in lines:
+					self.textB.insert(END, line)
 			self.buttonConnect.configure(text='Connect')
+			self.DBinfo['Percent'].config(text='')
+			self.textB.config(state=DISABLED)
 			messagebox.showinfo('Info', 'Disconnected.')
 
 # Alias read function.
 	def aliasRead(self):
 		f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\alias\\alias.txt', 'r')
-		self.lines = f.readlines()
+		lines = f.readlines()
 		f.close()
 		self.comboAliasValues = collections.OrderedDict()
-		for aliasList in self.lines:
+		for aliasList in lines:
 			self.comboAliasValues[aliasList.split('*')[0]] = aliasList.split('*')[1].split('^')
 		self.comboAlias['values'] = (['None'] + list(self.comboAliasValues.keys()))
 
@@ -182,6 +205,8 @@ class MainFrame(Frame):
 		if self.connCheck:
 			messagebox.showwarning('Warning', 'Please connect with DBMS.')
 		else:
+			self.DBinfo['Percent'].config(text='')
+			self.DBinfo['Progress'].stop()
 		# File path.
 			self.pathWindow = Toplevel()
 			self.pathWindow.title('Excel -> DB Scheme')
@@ -217,7 +242,6 @@ class MainFrame(Frame):
 			labelSheetED.pack(side=RIGHT, padx=5)
 
 	def clickED_S(self):
-		self.textB.delete(1.0, END)
 		self.DBinfo['Sheet'] = self.comboSheet.get()
 		self.DBinfo['Path'] =  self.entryPath.get()
 		self.DBinfo['Type'] = 'ED'
@@ -244,6 +268,7 @@ class MainFrame(Frame):
 					messagebox.showwarning('Warning', 'Please check the DBMS.')
 					self.pathWindow.lift()
 			except pymysql.InternalError as e:
+				self.status.stopFunction(False)
 				self.DBinfo['Progress'].stop()
 				code, message = e.args
 				print (code, message)
@@ -254,6 +279,7 @@ class MainFrame(Frame):
 			try:
 				self.callThread()
 			except cx_Oracle.DatabaseError as e:
+				self.status.stopFunction(False)
 				self.DBinfo['Progress'].stop()
 				error, = e.args
 				if error.code == 942:
@@ -262,6 +288,8 @@ class MainFrame(Frame):
 
 	def clickES(self):
 	# File path.
+		self.DBinfo['Percent'].config(text='')
+		self.DBinfo['Progress'].stop()
 		self.pathWindow = Toplevel()
 		self.pathWindow.title('Excel -> SQL File')
 		self.pathWindow.geometry('650x100+200+200')
@@ -294,7 +322,6 @@ class MainFrame(Frame):
 
 	def clickES_S(self):
 		try:
-			self.textB.delete(1.0, END)
 			self.DBinfo['Sheet'] = self.comboSheet.get()
 			self.DBinfo['Path'] =  self.entryPath.get()
 			self.DBinfo['Type'] = 'ES'
@@ -325,7 +352,8 @@ class MainFrame(Frame):
 		if self.connCheck:
 			messagebox.showwarning('Warning', 'Please connect with DBMS.')
 		else:
-			self.textB.delete(1.0, END)
+			self.DBinfo['Percent'].config(text='')
+			self.DBinfo['Progress'].stop()
 			self.DBinfo['Type'] = 'DE'
 			self.DBinfo['sid'] = self.information['sid']
 			try:
@@ -375,7 +403,8 @@ class MainFrame(Frame):
 		if self.connCheck:
 			messagebox.showwarning('Warning', 'Please connect with DBMS.')
 		else:
-			self.textB.delete(1.0, END)
+			self.DBinfo['Percent'].config(text='')
+			self.DBinfo['Progress'].stop()
 			self.DBinfo['Type'] = 'DS'
 			self.DBinfo['sid'] = self.information['sid']
 			try:
@@ -418,21 +447,35 @@ class MainFrame(Frame):
 				messagebox.showwarning('Warning','Please check the DBConnection informations.')
 
 	def callThread(self):
+		self.textB.config(state=NORMAL)
 		if self.DBinfo['Type'] == 'ES':
 			self.DBinfo['ESSave'] = self.entryPath_save.get()
 			self.saveWindow.destroy()
 			self.pathWindow.destroy()
+			self.DBinfo['Thread'] = Status.Status(self.textB)
+			self.DBinfo['Status'] = threading.Thread(target=self.DBinfo['Thread'].statusFunction, args=('Excel -> SQL File',))
+			self.DBinfo['Status'].start()
 		elif self.DBinfo['Type'] == 'DE':
 			self.DBinfo['DEPath'] = self.DEentryPath.get()
 			self.DBinfo['DESheet'] = self.entrySheet.get()
 			self.DBinfo['DEListBox'] = self.listboxDE
 			self.DBinfo['Window'] = self.DEWindow
 			self.DEWindow.lower()
+			self.DBinfo['Thread'] = Status.Status(self.textB)
+			self.DBinfo['Status'] = threading.Thread(target=self.DBinfo['Thread'].statusFunction, args=('DB -> Excel File',))
+			self.DBinfo['Status'].start()
 		elif self.DBinfo['Type'] == 'DS':
 			self.DBinfo['DSPath'] = self.DSentryPath.get()
 			self.DBinfo['DSListBox'] = self.listboxDS
 			self.DBinfo['Window'] = self.DSWindow
 			self.DSWindow.lower()
+			self.DBinfo['Thread'] = Status.Status(self.textB)
+			self.DBinfo['Status'] = threading.Thread(target=self.DBinfo['Thread'].statusFunction, args=('DB -> SQL File',))
+			self.DBinfo['Status'].start()
+		elif self.DBinfo['Type'] == 'ED':
+			self.DBinfo['Thread'] = Status.Status(self.textB)
+			self.DBinfo['Status'] = threading.Thread(target=self.DBinfo['Thread'].statusFunction, args=('Excel File -> DB',))
+			self.DBinfo['Status'].start()
 		th = threading.Thread(target=self.functionThread)
 		th.start()
 
@@ -445,64 +488,90 @@ class MainFrame(Frame):
 			elif self.comboDBMS.get() == 'MS-SQL':
 				MSSQL.MSSQL(self.DBinfo, self.textB)
 		except pymssql.OperationalError as e:
+			self.status.statusCheck = False
 			self.DBinfo['Progress'].stop()
 			code, message = e.args
 			if code == 2714:
 				messagebox.showwarning('Warning', 'Please check the DB.\nThe table name is already used.')
 
 	def connectionTestFunction(self):
+		self.textB.config(state=NORMAL)
 		try:
 			testThread = threading.Thread(target=self.connectionTestThread)
 			testThread.start()
 		except cx_Oracle.DatabaseError as e:
 			self.DBinfo['Progress'].stop()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnection Test Failed.\t\t\t\t[ ' + self.entryAddr.get() + ', '+ self.entryPort.get() + ', ' + self.entrySid.get() + ', ' + self.entryID.get() + ', ' + self.entryPW.get() + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Test Failed.' + "%-69s" % ('[ ' + self.entryAddr.get() + ', '+ self.entryPort.get()) + ' ]\n')
 			f.close()
+			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				lines = f.readlines()
+				if len(lines) > 20:
+					for i in range(0, len(lines)-20):
+						del lines[0]
+				for line in lines:
+					self.textB.insert(END, line)
+			self.textB.config(state=DISABLED)
 			messagebox.showwarning('Warning', e)
 			self.connectionWindow.lift()
 
 	def connectionTestThread(self):
-		if self.comboDBMS.get() == 'Oracle / Tibero':
-			dsnTest = cx_Oracle.makedsn(self.entryAddr.get(), self.entryPort.get(), self.entrySid.get())
-			test = cx_Oracle.connect(self.entryID.get(), self.entryPW.get(), dsnTest)
-		elif self.comboDBMS.get() == 'MySQL / MariaDB':
-			test = pymysql.connect(host=self.entryAddr.get(), port=int(self.entryPort.get()), user=self.entryID.get(), password=self.entryPW.get(), db=self.entrySid.get(), charset='utf8')
-		elif self.comboDBMS.get() == 'MS-SQL':
-			test = pymssql.connect(host=self.entryAddr.get(), port=int(self.entryPort.get()), user=self.entryID.get(), password=self.entryPW.get(), database=self.entrySid.get())
-		test.close()
-		messagebox.showinfo('info', 'Connection complete.')
-		self.connectionWindow.lift()
-		f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-		f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnection Tested.\t\t\t\t\t[ ' + self.entryAddr.get() + ', '+ self.entryPort.get() + ', ' + self.entrySid.get() + ', ' + self.entryID.get() + ', ' + self.entryPW.get() + ' ]\n')
-		f.close()
-
-	def connectionFunction(self):
-			try:
-				self.DBinfo['Progress'].start()
-				if self.comboDBMS.get() == 'Oracle / Tibero':
-					self.information = {'IP' : self.entryAddr.get(), 'Port' : self.entryPort.get(), 'sid' : self.entrySid.get(), 'ID' : self.entryID.get(), 'PW' : self.entryPW.get()}
-					self.dsn = cx_Oracle.makedsn(self.information['IP'], self.information['Port'], self.information['sid'])
-				elif self.comboDBMS.get() == 'MySQL / MariaDB':
-					self.information = {'IP' : self.entryAddr.get(), 'Port' : int(self.entryPort.get()), 'sid' : self.entrySid.get(), 'ID' : self.entryID.get(), 'PW' : self.entryPW.get()}
-				elif self.comboDBMS.get() == 'MS-SQL':
-					self.information = {'IP' : self.entryAddr.get(), 'Port' : int(self.entryPort.get()), 'sid' : self.entrySid.get(), 'ID' : self.entryID.get(), 'PW' : self.entryPW.get()}
-				self.connectionWindow.destroy()
-				connThread = threading.Thread(target=self.ConnectThread)
-				connThread.start()
-			except IOError:
-				self.DBinfo['Progress'].stop()
-				messagebox.showwarning('Warning', 'Please fill out the all information.')
-				self.connectionWindow.lift()
-			except cx_Oracle.DatabaseError as e:
-				self.DBinfo['Progress'].stop()
-				f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-				f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnection Failed.\t\t\t\t\t[ ' + self.information['IP'] + ', '+ self.information['Port'] + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]\n')
-				f.close()
+		self.datetime = datetime.datetime.now()
+		try:
+			if self.comboDBMS.get() == 'Oracle / Tibero':
+				dsnTest = cx_Oracle.makedsn(self.entryAddr.get(), self.entryPort.get(), self.entrySid.get())
+				test = cx_Oracle.connect(self.entryID.get(), self.entryPW.get(), dsnTest)
+			elif self.comboDBMS.get() == 'MySQL / MariaDB':
+				test = pymysql.connect(host=self.entryAddr.get(), port=int(self.entryPort.get()), user=self.entryID.get(), password=self.entryPW.get(), db=self.entrySid.get(), charset='utf8')
+			elif self.comboDBMS.get() == 'MS-SQL':
+				test = pymssql.connect(host=self.entryAddr.get(), port=int(self.entryPort.get()), user=self.entryID.get(), password=self.entryPW.get(), database=self.entrySid.get())
+			test.close()
+			messagebox.showinfo('info', 'Connection complete.')
+			self.connectionWindow.lift()
+			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Tested.' + "%-69s" % ('[ ' + self.entryAddr.get() + ', '+ self.entryPort.get()) + ' ]\n')
+			f.close()
+			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				lines = f.readlines()
+				if len(lines) > 20:
+					for i in range(0, len(lines)-20):
+						del lines[0]
+				for line in lines:
+					self.textB.insert(END, line)
+			self.textB.config(state=DISABLED)
+		except cx_Oracle.DatabaseError as e:
+			error, = e.args
+			if error.code == 12533:
 				messagebox.showwarning('Warning', e)
-				self.connectionWindow.lift()
-
+		except (pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError) as e:
+			messagebox.showwarning('Warning', e)
+		except (IOError,ValueError):
+			messagebox.showwarning('Warning', 'Please fill out the all information.')
+			self.connectionWindow.lift()
+	def connectionFunction(self):
+		self.textB.config(state=NORMAL)
+		try:
+			self.DBinfo['Progress'].config(maximum=500)
+			self.DBinfo['Progress'].start()
+			if self.comboDBMS.get() == 'Oracle / Tibero':
+				self.information = {'IP' : self.entryAddr.get(), 'Port' : self.entryPort.get(), 'sid' : self.entrySid.get(), 'ID' : self.entryID.get(), 'PW' : self.entryPW.get()}
+				self.dsn = cx_Oracle.makedsn(self.information['IP'], self.information['Port'], self.information['sid'])
+			elif self.comboDBMS.get() == 'MySQL / MariaDB':
+				self.information = {'IP' : self.entryAddr.get(), 'Port' : int(self.entryPort.get()), 'sid' : self.entrySid.get(), 'ID' : self.entryID.get(), 'PW' : self.entryPW.get()}
+			elif self.comboDBMS.get() == 'MS-SQL':
+				self.information = {'IP' : self.entryAddr.get(), 'Port' : int(self.entryPort.get()), 'sid' : self.entrySid.get(), 'ID' : self.entryID.get(), 'PW' : self.entryPW.get()}
+			self.connectionWindow.destroy()
+			self.status = Status.Status(self.textB)
+			self.statusTh = threading.Thread(target=self.status.statusFunction, args=('Connecting',))
+			self.statusTh.start()
+			connThread = threading.Thread(target=self.ConnectThread)
+			connThread.start()
+		except (IOError,ValueError):
+			self.DBinfo['Progress'].stop()
+			messagebox.showwarning('Warning', 'Please fill out the all information.')
+			self.connectionWindow.lift()
 	def ConnectThread(self):
+		self.datetime = datetime.datetime.now()
 		try:
 			if self.comboDBMS.get() == 'Oracle / Tibero':
 				self.db = cx_Oracle.connect(self.information['ID'], self.information['PW'], self.dsn)
@@ -514,25 +583,66 @@ class MainFrame(Frame):
 			self.DBinfo['DB'] = self.db
 			self.DBinfo['Cursor'] = self.cursor
 			if self.connCheck:
+				self.status.stopFunction(False)
+				self.statusTh.join()
 				self.DBinfo['Progress'].stop()
+				self.DBinfo['Progress'].config(value=500)
 				self.textB.delete(1.0, END)
-				self.textB.insert(1.0, 'Database Connect!!')
+				self.textB.insert(1.0, 'Database Connect!!\n\n')
 				self.buttonConnect.configure(text='Disconnect')
 				self.connCheck = False
 				f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
 				if self.comboDBMS.get() == 'Oracle / Tibero':
-					f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnected.\t\t\t\t\t\t\t[ ' + self.information['IP'] + ', '+ self.information['Port'] + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tConnected.    (' + self.comboDBMS.get() + ')') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ self.information['Port']) + ' ]\n')
 				elif self.comboDBMS.get() == 'MySQL / MariaDB':
-					f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tConnected.\t\t\t\t\t\t\t[ ' + self.information['IP'] + ', '+ str(self.information['Port']) + ', ' + self.information['sid'] + ', ' + self.information['ID'] + ', ' + self.information['PW'] + ' ]\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tConnected.    (' + self.comboDBMS.get() + ')') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
+				elif self.comboDBMS.get() == 'MS-SQL':
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tConnected.    (' + self.comboDBMS.get() + ')') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
 				f.close()
+				with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+					lines = f.readlines()
+					if len(lines) > 20:
+						for i in range(0, len(lines)-20):
+							del lines[0]
+					for line in lines:
+						self.textB.insert(END, line)
+				self.textB.config(state=DISABLED)
 		except cx_Oracle.DatabaseError as e:
+			self.status.stopFunction(False)
 			self.DBinfo['Progress'].stop()
 			error, = e.args
 			if error.code == 12569:
 				messagebox.showwarning('Warning', 'Please check the DBMS.')
-		except pymssql.InterfaceError as e:
+			else:
+				messagebox.showwarning('Warning', e)
+			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Failed.' + "%-69s" % ('[ ' + self.information['IP'] + ', '+ self.information['Port']) + ' ]\n')
+			f.close()
+			self.textB.delete(1.0, END)
+			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				lines = f.readlines()
+				if len(lines) > 20:
+					for i in range(0, len(lines)-20):
+						del lines[0]
+				for line in lines:
+					self.textB.insert(END, line)
+			self.textB.config(state=DISABLED)
+		except (pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError, ConnectionResetError)as e:
+			self.status.stopFunction(False)
 			self.DBinfo['Progress'].stop()
 			messagebox.showwarning('Warning', e)
+			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Failed.' + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
+			f.close()
+			self.textB.delete(1.0, END)
+			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				lines = f.readlines()
+				if len(lines) > 20:
+					for i in range(0, len(lines)-20):
+						del lines[0]
+				for line in lines:
+					self.textB.insert(END, line)
+			self.textB.config(state=DISABLED)
 
 	def aliasFunction(self):
 		self.aliasWindow = Toplevel()
@@ -551,6 +661,7 @@ class MainFrame(Frame):
 		buttonAliasR.pack(side=LEFT, padx=20)
 
 	def registrationFunction(self):
+		self.textB.config(state=NORMAL)
 		try:
 			self.information = {'IP' : self.entryAddr.get(), 'Port' : self.entryPort.get(), 'sid' : self.entrySid.get(), 'ID' : self.entryID.get(), 'PW' : self.entryPW.get()}
 			for key, value in self.information.items():
@@ -570,11 +681,20 @@ class MainFrame(Frame):
 					f.close()
 					self.aliasRead()
 					f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-					f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tAlias Registered.\t\t\t\t\t[ ' + self.entryAlias.get() + ' ]\n')
+					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tAlias Registered.' + "%-69s" % ('[ ' + self.entryAlias.get()) + ' ]\n')
 					f.close()
+					with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+						lines = f.readlines()
+						if len(lines) > 20:
+							for i in range(0, len(lines)-20):
+								del lines[0]
+						for line in lines:
+							self.textB.insert(END, line)
+					self.textB.config(state=DISABLED)
 			self.connectionWindow.lift()
 			self.aliasWindow.destroy()
 		except IOError:
+			self.status.stopFunction(False)
 			self.DBinfo['Progress'].stop()
 			self.aliasWindow.destroy()
 			messagebox.showwarning('Warning', 'Please fill out the all information.')
@@ -582,6 +702,7 @@ class MainFrame(Frame):
 
 	def aliasDeleteFunction(self):
 		if self.comboAlias.get() != 'None':
+			self.textB.config(state=NORMAL)
 			content = ''
 			if self.comboAlias.get() in self.comboAliasValues:
 				del self.comboAliasValues[self.comboAlias.get()]
@@ -593,8 +714,16 @@ class MainFrame(Frame):
 			f.close()
 			self.aliasRead()
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tAlias Deleted.\t\t\t\t\t\t[ ' + self.comboAlias.get() + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tAlias Deleted.' + "%-69s" % ('[ ' + self.comboAlias.get()) + ' ]\n')
 			f.close()
+			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				lines = f.readlines()
+				if len(lines) > 20:
+					for i in range(0, len(lines)-20):
+						del lines[0]
+				for line in lines:
+					self.textB.insert(END, line)
+			self.textB.config(state=DISABLED)
 			self.comboAlias['values'] = (['None'] + list(self.comboAliasValues.keys()))
 			self.comboAlias.current(0)
 			self.entryAddr.delete(0, END)
@@ -603,8 +732,31 @@ class MainFrame(Frame):
 			self.entryID.delete(0, END)
 			self.entryPW.delete(0, END)
 		else:
+			self.status.stopFunction(False)
+			self.DBinfo['Progress'].stop()
 			messagebox.showwarning('Warning', 'Please select a alias to delete.')
 			self.connectionWindow.lift()
+
+	def logFunction(self):
+		logWindow = Toplevel()
+		logWindow.title('Log')
+		logWindow.geometry('1000x400+200+200')
+		logWindow.resizable(False, False)
+
+		frame_log = Frame(logWindow)
+		frame_log.pack(fill=BOTH, padx=10, pady=10)
+
+		scrollbar = Scrollbar(frame_log)
+		scrollbar.pack(side=RIGHT, fill=Y)
+		textLog = Text(frame_log)
+		textLog.pack(fill=BOTH, expand=1)
+		textLog.config(yscrollcommand=scrollbar.set)
+		with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			lines = f.readlines()
+			for line in lines:
+				textLog.insert(END, line)
+		textLog.config(state=DISABLED)
+		scrollbar.config(command=textLog.yview)
 
 	def pathESFunction(self):
 		self.entryPath_save.delete(0, END)
@@ -624,7 +776,7 @@ class MainFrame(Frame):
 def main():
 # Create window.
 	window = Tk()
-	window.geometry('640x250+100+100')
+	window.geometry('980x400+100+100')
 	window.resizable(False, False)
 	MainFrame(window)
 	window.mainloop()

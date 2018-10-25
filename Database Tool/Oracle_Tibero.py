@@ -12,7 +12,7 @@ class Oracle_Tibero:
 	def __init__(self, info, textB):
 		self.info = info
 		self.textB = textB
-		self.info['Progress'].start()
+		self.datetime = datetime.datetime.now()
 	# Functions by button type.
 		if self.info['Type'] == 'ED' or self.info['Type'] == 'ES':
 			if self.info['Type'] == 'ED' and self.info['Drop'] == 1:
@@ -25,16 +25,25 @@ class Oracle_Tibero:
 			self.realList = list()
 			self.excel_document = openpyxl.load_workbook(self.info['Path'])
 			self.sheetList = self.excel_document.sheetnames
+			count = 1
 			if self.info['Sheet'] == 'all':
 				for sheetnameList in self.sheetList:
 					if sheetnameList[0] == '#':
 						continue
 					self.realList.append(sheetnameList)
+				self.info['Progress'].config(maximum=len(self.realList))
 				for real in self.realList:
 					self.ED_ESFunction(real)
+					self.info['Progress'].config(value=count)
+					self.info['Percent'].config(text=str(count)+' / '+str(len(self.realList)) + ' Sheets')
+					count += 1
 			else:
 				self.realList.append(self.info['Sheet'])
+				self.info['Progress'].config(maximum=len(self.realList))
 				self.ED_ESFunction(self.info['Sheet'])
+				self.info['Progress'].config(value=count)
+				self.info['Percent'].config(text=str(count)+' / '+str(len(self.realList)) + ' Sheets')
+				count += 1
 		elif self.info['Type'] == 'DE':
 			self.DB_ExcelFunction()
 		elif self.info['Type'] == 'DS':
@@ -174,12 +183,21 @@ class Oracle_Tibero:
 				for sql in send[2]:
 					self.info['Cursor'].execute(sql)
 			if name == self.realList[-1]:
-				self.info['Progress'].stop()
+				self.info['Thread'].stopFunction(False)
+				self.info['Status'].join()
 				self.textB.delete(1.0, END)
-				self.textB.insert(1.0, 'Excel -> DB Scheme Complete!')
+				self.textB.insert(1.0, 'Excel File-> DB Scheme Complete!\n\n')
 				f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-				f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tExcel -> DB Scheme Function.\t\t[ ' + str(self.info['Path'].encode('euc-kr')) + ' ]\n')
+				f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel File -> DB Scheme Function.' + "%-60s" % ('[ ' + str(self.info['Path'])) + ' ]\n')
 				f.close()
+				with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+					lines = f.readlines()
+					if len(lines) > 20:
+						for i in range(0, len(lines)-20):
+							del lines[0]
+					for line in lines:
+						self.textB.insert(END, line)
+				self.textB.config(state=DISABLED)
 	# Excel -> SQL File Function.
 		elif self.info['Type'] == 'ES' and name == self.realList[-1]:
 			self.Excel_SQLFunction()
@@ -201,140 +219,165 @@ class Oracle_Tibero:
 						commStr += comm + ';\n\n'
 					f.write(send[0] + ';' + send[1] + ';\n\n' + commStr)
 			f.close()
-			self.info['Progress'].stop()
-			self.textB.insert(1.0, 'Excel -> SQL File Complete!\n\n')
-			self.textB.insert(END, self.info['ESSave'])
+			self.info['Thread'].stopFunction(False)
+			self.info['Status'].join()
+			self.textB.delete(1.0, END)
+			self.textB.insert(1.0, 'Excel File -> SQL File Complete!\n\n')
+			self.textB.insert(END, self.info['ESSave'] + '\n\n')
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tExcel -> SQL File Function.\t\t\t[ ' + str(self.info['Path'].encode('euc-kr')) + ' -> ' + self.info['ESSave'] + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel Fiel -> SQL File Function.' + "%-69s" % ('[ ' + self.info['ESSave']) + ' ]\n')
 			f.close()
+			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				lines = f.readlines()
+				if len(lines) > 20:
+					for i in range(0, len(lines)-20):
+						del lines[0]
+				for line in lines:
+					self.textB.insert(END, line)
+			self.textB.config(state=DISABLED)
 		except IOError:
-			self.info['Progress'].stop()
 			messagebox.showwarning('Warning','Please select a SQL file to save.')
 
 	def DB_ExcelFunction(self):
-		self.info['Progress'].start()
 		try:
 			wb = openpyxl.load_workbook('C:\\Users\\Secuve\\Desktop\\Database Tool\\history file\\history.xlsx')
 			sheetmkNew = wb.create_sheet()
 			sheetmkNew.title = self.info['DESheet']
-		except ValueError:
-			self.info['Progress'].stop()
-			messagebox.showwarning('Warning','Please fill out the Sheet name.')
+			sheetmkNew.column_dimensions['A'].width = 5
+			sheetmkNew.column_dimensions['B'].width = 30
+			sheetmkNew.column_dimensions['C'].width = 30
+			sheetmkNew.column_dimensions['D'].width = 15
+			sheetmkNew.column_dimensions['E'].width = 10
+			sheetmkNew.column_dimensions['F'].width = 7
+			sheetmkNew.column_dimensions['G'].width = 10
+			sheetmkNew.column_dimensions['H'].width = 30
+			sheetmkNew.column_dimensions['I'].width = 60
 
-		sheetmkNew.column_dimensions['A'].width = 5
-		sheetmkNew.column_dimensions['B'].width = 30
-		sheetmkNew.column_dimensions['C'].width = 30
-		sheetmkNew.column_dimensions['D'].width = 15
-		sheetmkNew.column_dimensions['E'].width = 10
-		sheetmkNew.column_dimensions['F'].width = 7
-		sheetmkNew.column_dimensions['G'].width = 10
-		sheetmkNew.column_dimensions['H'].width = 30
-		sheetmkNew.column_dimensions['I'].width = 60
+			sheetmkNew.cell(row=1, column=1).value = u'주석'
+			sheetmkNew.cell(row=1, column=2).value = u'필드명'
+			sheetmkNew.cell(row=1, column=3).value = u'필드명(한글)'
+			sheetmkNew.cell(row=1, column=4).value = u'데이터타입'
+			sheetmkNew.cell(row=1, column=5).value = u'길이'
+			sheetmkNew.cell(row=1, column=6).value = u'필수'
+			sheetmkNew.cell(row=1, column=7).value = u'유효길이'
+			sheetmkNew.cell(row=1, column=8).value = u'샘플데이터'
+			sheetmkNew.cell(row=1, column=9).value = u'설명'
+			sheetmkNew.cell(row=2, column=6).value = 'Y/N'
 
-		sheetmkNew.cell(row=1, column=1).value = u'주석'
-		sheetmkNew.cell(row=1, column=2).value = u'필드명'
-		sheetmkNew.cell(row=1, column=3).value = u'필드명(한글)'
-		sheetmkNew.cell(row=1, column=4).value = u'데이터타입'
-		sheetmkNew.cell(row=1, column=5).value = u'길이'
-		sheetmkNew.cell(row=1, column=6).value = u'필수'
-		sheetmkNew.cell(row=1, column=7).value = u'유효길이'
-		sheetmkNew.cell(row=1, column=8).value = u'샘플데이터'
-		sheetmkNew.cell(row=1, column=9).value = u'설명'
-		sheetmkNew.cell(row=2, column=6).value = 'Y/N'
+			fontBold = Font(bold = True)
+			column_border_L = Border(left=Side(style='thick'))
+			column_border_R = Border(right=Side(style='thick'))
+			row_border_T = Border(top=Side(style='thick'))
+			row_border_B = Border(bottom=Side(style='thick'))
 
-		fontBold = Font(bold = True)
-		column_border_L = Border(left=Side(style='thick'))
-		column_border_R = Border(right=Side(style='thick'))
-		row_border_T = Border(top=Side(style='thick'))
-		row_border_B = Border(bottom=Side(style='thick'))
-
-		self.textB.delete(1.0, END)
-
-		lineCnt = 3
-		for index in self.info['DEListBox'].curselection():
-			tableName = str(self.info['DEListBox'].get(index)[0])
-			self.info['Cursor'].execute("SELECT U.COLUMN_NAME, U.DATA_TYPE, U.DATA_LENGTH, A.COMMENTS FROM USER_TAB_COLUMNS U, ALL_COL_COMMENTS A WHERE U.COLUMN_NAME = A.COLUMN_NAME AND U.TABLE_NAME = '" + tableName + "' AND A.TABLE_NAME = '" + tableName + "'")
-			sqlList = self.info['Cursor'].fetchall()
-			self.info['Cursor'].execute("SELECT S.CONSTRAINT_TYPE, C.COLUMN_NAME FROM USER_CONS_COLUMNS C INNER JOIN USER_CONSTRAINTS S ON C.CONSTRAINT_NAME = S.CONSTRAINT_NAME AND (S.CONSTRAINT_TYPE = 'P' OR S.CONSTRAINT_TYPE = 'U') WHERE C.TABLE_NAME = '" + tableName + "' ORDER BY 1")
-			constraintList = self.info['Cursor'].fetchall()
-			self.info['Cursor'].execute("SELECT COMMENTS FROM USER_TAB_COMMENTS WHERE TABLE_NAME = '" + tableName + "'")
-			tableComment = self.info['Cursor'].fetchall()
-			rowList = list()
-			sheetmkNew.cell(row=lineCnt, column=2).value = tableName
-			sheetmkNew.cell(row=lineCnt, column=3).value = tableComment[0][0]
-			sheetmkNew['B' + str(lineCnt)].font = fontBold
-			sheetmkNew['C' + str(lineCnt)].font = fontBold
-			lineCnt += 1
-			for sqllist in sqlList:
-				rowList.append([str(sqllist[0]), str(sqllist[1]), str(int(sqllist[2])), str(sqllist[3])])
-			for row in rowList:
-				if row == rowList[0]:
-					for rowC in sheetmkNew['B' + str(lineCnt) + ':I' + str(lineCnt)]:
-						for cell in rowC:
-							cell.border = cell.border + row_border_T
-				if row == rowList[-1]:
-					for rowC in sheetmkNew['B' + str(lineCnt) + ':I' + str(lineCnt)]:
-						for cell in rowC:
-							cell.border = cell.border + row_border_B
-				sheetmkNew['B' + str(lineCnt)].border = sheetmkNew['B' + str(lineCnt)].border + column_border_L
-				sheetmkNew['I' + str(lineCnt)].border = sheetmkNew['I' + str(lineCnt)].border + column_border_R
-				check = True
-				lowerRow1 = row[1].lower()
-				for const in constraintList:
-					if const[1] == row[0]:
-						if const[0] == 'P':
-							sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
-							sheetmkNew.cell(row=lineCnt, column=3).value = row[3]
-							sheetmkNew.cell(row=lineCnt, column=4).value = 'int'
-							sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
-							sheetmkNew.cell(row=lineCnt, column=6).value = ''
-							lineCnt += 1
-							check = False
-							break
-						elif const[0] == 'U':
-							sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
-							sheetmkNew.cell(row=lineCnt, column=3).value = row[3]
-							if lowerRow1 == 'varchar2':
-								sheetmkNew.cell(row=lineCnt, column=4).value = 'string'
-							elif lowerRow1 == 'clob':
-								sheetmkNew.cell(row=lineCnt, column=4).value = 'text'
-							else:
-								sheetmkNew.cell(row=lineCnt, column=4).value = lowerRow1
-							sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
-							sheetmkNew.cell(row=lineCnt, column=6).value = 'Y'
-							lineCnt += 1
-							check = False
-							break
-				if check:
-					sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
-					sheetmkNew.cell(row=lineCnt, column=3).value = row[3]
-					if lowerRow1 == 'varchar2':
-						sheetmkNew.cell(row=lineCnt, column=4).value = 'string'
-					elif lowerRow1 == 'clob':
-						sheetmkNew.cell(row=lineCnt, column=4).value = 'text'
-					else:
-						sheetmkNew.cell(row=lineCnt, column=4).value = lowerRow1
-					sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
-					sheetmkNew.cell(row=lineCnt, column=6).value = ''
-					lineCnt += 1
-			lineCnt += 1
-		try:
+			lineCnt = 3
+			count = 1
+			self.info['Progress'].config(maximum=len(self.info['DEListBox'].curselection()))
+			for index in self.info['DEListBox'].curselection():
+				tableName = str(self.info['DEListBox'].get(index)[0])
+				self.info['Cursor'].execute("SELECT U.COLUMN_NAME, U.DATA_TYPE, U.DATA_LENGTH, A.COMMENTS FROM USER_TAB_COLUMNS U, ALL_COL_COMMENTS A WHERE U.COLUMN_NAME = A.COLUMN_NAME AND U.TABLE_NAME = '" + tableName + "' AND A.TABLE_NAME = '" + tableName + "'")
+				sqlList = self.info['Cursor'].fetchall()
+				self.info['Cursor'].execute("SELECT S.CONSTRAINT_TYPE, C.COLUMN_NAME FROM USER_CONS_COLUMNS C INNER JOIN USER_CONSTRAINTS S ON C.CONSTRAINT_NAME = S.CONSTRAINT_NAME AND (S.CONSTRAINT_TYPE = 'P' OR S.CONSTRAINT_TYPE = 'U') WHERE C.TABLE_NAME = '" + tableName + "' ORDER BY 1")
+				constraintList = self.info['Cursor'].fetchall()
+				self.info['Cursor'].execute("SELECT COMMENTS FROM USER_TAB_COMMENTS WHERE TABLE_NAME = '" + tableName + "'")
+				tableComment = self.info['Cursor'].fetchall()
+				rowList = list()
+				sheetmkNew.cell(row=lineCnt, column=2).value = tableName
+				sheetmkNew.cell(row=lineCnt, column=3).value = tableComment[0][0]
+				sheetmkNew['B' + str(lineCnt)].font = fontBold
+				sheetmkNew['C' + str(lineCnt)].font = fontBold
+				lineCnt += 1
+				sqlList.reverse()
+				for sqllist in sqlList:
+					rowList.append([str(sqllist[0]), str(sqllist[1]), str(int(sqllist[2])), str(sqllist[3])])
+				for row in rowList:
+					if row == rowList[0]:
+						for rowC in sheetmkNew['B' + str(lineCnt) + ':I' + str(lineCnt)]:
+							for cell in rowC:
+								cell.border = cell.border + row_border_T
+					if row == rowList[-1]:
+						for rowC in sheetmkNew['B' + str(lineCnt) + ':I' + str(lineCnt)]:
+							for cell in rowC:
+								cell.border = cell.border + row_border_B
+					sheetmkNew['B' + str(lineCnt)].border = sheetmkNew['B' + str(lineCnt)].border + column_border_L
+					sheetmkNew['I' + str(lineCnt)].border = sheetmkNew['I' + str(lineCnt)].border + column_border_R
+					check = True
+					lowerRow1 = row[1].lower()
+					for const in constraintList:
+						if const[1] == row[0]:
+							if const[0] == 'P':
+								sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
+								sheetmkNew.cell(row=lineCnt, column=3).value = row[3]
+								sheetmkNew.cell(row=lineCnt, column=4).value = 'int'
+								sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
+								sheetmkNew.cell(row=lineCnt, column=6).value = ''
+								lineCnt += 1
+								check = False
+								break
+							elif const[0] == 'U':
+								sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
+								sheetmkNew.cell(row=lineCnt, column=3).value = row[3]
+								if lowerRow1 == 'varchar2':
+									sheetmkNew.cell(row=lineCnt, column=4).value = 'string'
+								elif lowerRow1 == 'clob':
+									sheetmkNew.cell(row=lineCnt, column=4).value = 'text'
+								else:
+									sheetmkNew.cell(row=lineCnt, column=4).value = lowerRow1
+								sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
+								sheetmkNew.cell(row=lineCnt, column=6).value = 'Y'
+								lineCnt += 1
+								check = False
+								break
+					if check:
+						sheetmkNew.cell(row=lineCnt, column=2).value = row[0]
+						sheetmkNew.cell(row=lineCnt, column=3).value = row[3]
+						if lowerRow1 == 'varchar2':
+							sheetmkNew.cell(row=lineCnt, column=4).value = 'string'
+						elif lowerRow1 == 'clob':
+							sheetmkNew.cell(row=lineCnt, column=4).value = 'text'
+						else:
+							sheetmkNew.cell(row=lineCnt, column=4).value = lowerRow1
+						sheetmkNew.cell(row=lineCnt, column=5).value = row[2]
+						sheetmkNew.cell(row=lineCnt, column=6).value = ''
+						lineCnt += 1
+				lineCnt += 1
+				self.info['Progress'].config(value=count)
+				self.info['Percent'].config(text=str(count)+' / '+str(len(self.info['DEListBox'].curselection())) + ' Tables')
+				count += 1
 			wb.save(self.info['DEPath'])
-			self.info['Progress'].stop()
+			self.info['Thread'].stopFunction(False)
+			self.info['Status'].join()
 			self.info['Window'].destroy()
+			self.textB.delete(1.0, END)
 			self.textB.insert(1.0, 'DB Scheme -> Excel Complete!\n\n')
-			self.textB.insert(END, self.info['DEPath'])
+			self.textB.insert(END, self.info['DEPath'] + '\n\n')
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tDB Scheme -> Excel File Function.\t[ ' + self.info['DEPath'] + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tDB Scheme -> Excel File Function.' + "%-69s" % ('[ ' + self.info['DEPath']) + ' ]\n')
 			f.close()
+			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				lines = f.readlines()
+				if len(lines) > 20:
+					for i in range(0, len(lines)-20):
+						del lines[0]
+				for line in lines:
+					self.textB.insert(END, line)
+			self.textB.config(state=DISABLED)
 		except IOError:
-			self.info['Progress'].stop()
 			messagebox.showwarning('Warning','Please select a Excel file to save.')
+			self.info['Thread'].stopFunction(False)
+			self.info['Status'].join()
+			self.textB.delete(1.0, END)
+		except ValueError:
+			messagebox.showwarning('Warning','Please fill out the Sheet name.')
+			self.info['Thread'].stopFunction(False)
+			self.info['Status'].join()
+			self.textB.delete(1.0, END)
 
 	def DB_SQLFunction(self):
-		self.info['Progress'].start()
 		try:
 			writeSQLsentence = ''
+			count = 1
+			self.info['Progress'].config(maximum=len(self.info['DSListBox'].curselection()))
 			for index in self.info['DSListBox'].curselection():
 				tableName = str(self.info['DSListBox'].get(index)[0])
 				checkNull = False
@@ -412,16 +455,28 @@ class Oracle_Tibero:
 				for cC in rowList:
 					cCStr += 'COMMENT ON COLUMN ' + tableName + '.' + cC[0] + " IS '" + cC[3] + "';\n\n"
 				writeSQLsentence += SQLsentence + 'COMMENT ON TABLE ' + tableName + " IS '" + tableComment[0][0] + "';\n\n" + cCStr
+				self.info['Progress'].config(value=count)
+				self.info['Percent'].config(text=str(count)+' / '+str(len(self.info['DSListBox'].curselection())) + ' Tables')
+				count += 1
 			f = open(self.info['DSPath'], 'w')
 			f.write(writeSQLsentence)
 			f.close()
-			self.info['Progress'].stop()
+			self.info['Thread'].stopFunction(False)
+			self.info['Status'].join()
 			self.info['Window'].destroy()
+			self.textB.delete(1.0, END)
 			self.textB.insert(1.0, 'DB Scheme -> SQL File Complete!\n\n')
-			self.textB.insert(END, self.info['DSPath'])
+			self.textB.insert(END, self.info['DSPath'] + '\n\n')
 			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
-			f.write(str('%s-%s-%s %s:%s:%s' %(datetime.datetime.now().year, datetime.datetime.now().month, datetime.datetime.now().day, datetime.datetime.now().hour, datetime.datetime.now().minute, datetime.datetime.now().second)) + '\tDB Scheme -> SQL File Function.\t\t[ ' + self.info['DSPath'] + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tDB Scheme -> SQL File Function.' + "%-69s" % ('[ ' + self.info['DSPath']) + ' ]\n')
 			f.close()
+			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				lines = f.readlines()
+				if len(lines) > 20:
+					for i in range(0, len(lines)-20):
+						del lines[0]
+				for line in lines:
+					self.textB.insert(END, line)
+			self.textB.config(state=DISABLED)
 		except IOError:
-			self.info['Progress'].stop()
 			messagebox.showwarning('Warning','Please select a SQL file to save.')
