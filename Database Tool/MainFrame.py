@@ -3,8 +3,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 from time import sleep
-import openpyxl, cx_Oracle, pymysql, pymssql, Oracle_Tibero, MySQL, MSSQL, Status, datetime, threading, collections, PIL
-
+import openpyxl, cx_Oracle, pymysql, pymssql, Oracle_Tibero, MySQL, MSSQL, Status, datetime, threading, collections, PIL, os
 class MainFrame(Frame):
 	def __init__(self, master):
 		Frame.__init__(self, master)
@@ -64,7 +63,7 @@ class MainFrame(Frame):
 		self.textB = Text(frame8)
 		self.textB.pack(fill=BOTH, expand=1)
 		self.textB.config(yscrollcommand=scrollbar.set)
-		with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+		with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 			lines = f.readlines()
 			if len(lines) > 20:
 				for i in range(0, len(lines)-20):
@@ -156,7 +155,7 @@ class MainFrame(Frame):
 			self.datetime = datetime.datetime.now()
 			self.db.close()
 			self.connCheck = True
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tDisconnected. (' + self.comboDBMS.get() + ')') + '[ ' + "%-67s" % (self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
 			f.close()
 			for key in self.information.keys():
@@ -164,7 +163,7 @@ class MainFrame(Frame):
 			self.DBinfo['Progress'].stop()
 			self.textB.delete(1.0, END)
 			self.textB.insert(1.0, 'Database Disconnected!!\n\n')
-			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
 				if len(lines) > 20:
 					for i in range(0, len(lines)-20):
@@ -178,7 +177,7 @@ class MainFrame(Frame):
 
 # Alias read function.
 	def aliasRead(self):
-		f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\alias\\alias.txt', 'r')
+		f = open(os.path.abspath('') + '\\alias\\alias.txt', 'r')
 		lines = f.readlines()
 		f.close()
 		self.comboAliasValues = collections.OrderedDict()
@@ -453,10 +452,10 @@ class MainFrame(Frame):
 			testThread.start()
 		except (cx_Oracle.DatabaseError, pymssql.DatabaseError, pymssql.InterfaceError, pymssql.OperationalError, pymysql.err.OperationalError) as e:
 			self.DBinfo['Progress'].stop()
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Test Failed.' + "%-69s" % ('[ ' + self.entryAddr.get() + ', '+ self.entryPort.get()) + ' ]\n')
 			f.close()
-			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
 				if len(lines) > 20:
 					for i in range(0, len(lines)-20):
@@ -480,10 +479,10 @@ class MainFrame(Frame):
 			test.close()
 			messagebox.showinfo('info', 'Connection complete.')
 			self.connectionWindow.lift()
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Tested.' + "%-69s" % ('[ ' + self.entryAddr.get() + ', '+ self.entryPort.get()) + ' ]\n')
 			f.close()
-			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
 				if len(lines) > 20:
 					for i in range(0, len(lines)-20):
@@ -539,7 +538,7 @@ class MainFrame(Frame):
 				self.textB.insert(1.0, 'Database Connect!!\n\n')
 				self.buttonConnect.configure(text='Disconnect')
 				self.connCheck = False
-				f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+				f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 				if self.comboDBMS.get() == 'Oracle / Tibero':
 					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tConnected.    (' + self.comboDBMS.get() + ')') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ self.information['Port']) + ' ]\n')
 				elif self.comboDBMS.get() == 'MySQL / MariaDB':
@@ -547,7 +546,7 @@ class MainFrame(Frame):
 				elif self.comboDBMS.get() == 'MS-SQL':
 					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % ('\t\tConnected.    (' + self.comboDBMS.get() + ')') + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
 				f.close()
-				with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 					lines = f.readlines()
 					if len(lines) > 20:
 						for i in range(0, len(lines)-20):
@@ -559,11 +558,11 @@ class MainFrame(Frame):
 			self.status.stopFunction(False)
 			self.DBinfo['Progress'].stop()
 			messagebox.showwarning('Warning', e)
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tConnection Failed.' + "%-69s" % ('[ ' + self.information['IP'] + ', '+ str(self.information['Port'])) + ' ]\n')
 			f.close()
 			self.textB.delete(1.0, END)
-			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
 				if len(lines) > 20:
 					for i in range(0, len(lines)-20):
@@ -604,14 +603,14 @@ class MainFrame(Frame):
 					content = self.entryAlias.get() + '*' + self.information['IP'] + '^' + self.information['Port'] + '^' + self.information['sid'] + '^' + self.information['ID'] + '^' + self.information['PW'] + '*' + self.comboDBMS.get() + '*' + str(datetime.datetime.now()) + '\n'
 					self.comboAlias['values'] = (['None'] + list(self.comboAliasValues.keys()))
 					self.comboAlias.set(self.entryAlias.get())
-					f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\alias\\alias.txt', 'a')
+					f = open(os.path.abspath('') + '\\alias\\alias.txt', 'a')
 					f.write(content)
 					f.close()
 					self.aliasRead()
-					f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+					f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 					f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tAlias Registered.' + "%-69s" % ('[ ' + self.entryAlias.get()) + ' ]\n')
 					f.close()
-					with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+					with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 						lines = f.readlines()
 						if len(lines) > 20:
 							for i in range(0, len(lines)-20):
@@ -631,19 +630,17 @@ class MainFrame(Frame):
 			self.textB.config(state=NORMAL)
 			content = str()
 			writeList = list()
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\alias\\alias.txt', 'r')
-			lines = f.readlines()
-			f.close()
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\alias\\alias.txt', 'w')
-			for line in lines:
-				if self.comboAlias.get() != line.split('*')[0]:
-					f.write(line)
-			f.close()
+			with open(os.path.abspath('') + '\\alias\\alias.txt', 'r') as f:
+				lines = f.readlines()
+			with open(os.path.abspath('') + '\\alias\\alias.txt', 'w') as f:
+				for line in lines:
+					if self.comboAlias.get() != line.split('*')[0]:
+						f.write(line)
 			self.aliasRead()
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tAlias Deleted.' + "%-69s" % ('[ ' + self.comboAlias.get()) + ' ]\n')
 			f.close()
-			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
 				if len(lines) > 20:
 					for i in range(0, len(lines)-20):
@@ -678,7 +675,7 @@ class MainFrame(Frame):
 		textLog = Text(frame_log)
 		textLog.pack(fill=BOTH, expand=1)
 		textLog.config(yscrollcommand=scrollbar.set)
-		with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+		with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 			lines = f.readlines()
 			for line in lines:
 				textLog.insert(END, line)

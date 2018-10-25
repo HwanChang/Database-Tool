@@ -4,7 +4,7 @@ from tkinter import ttk
 from tkinter import messagebox
 from tkinter import filedialog
 from openpyxl.styles import Border, Side, Font
-import openpyxl, pymssql, datetime, collections, threading, MainFrame
+import openpyxl, pymssql, datetime, collections, threading, MainFrame, os
 
 class MSSQL:
 	def __init__(self, info, textB):
@@ -174,10 +174,10 @@ class MSSQL:
 				self.info['Status'].join()
 				self.textB.delete(1.0, END)
 				self.textB.insert(1.0, 'Excel File -> DB Scheme Complete!\n\n')
-				f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+				f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 				f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel File -> DB Scheme Function.' + "%-60s" % ('[ ' + self.info['Path']) + ' ]\n')
 				f.close()
-				with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+				with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 					lines = f.readlines()
 					if len(lines) > 20:
 						for i in range(0, len(lines)-20):
@@ -211,10 +211,10 @@ class MSSQL:
 			self.textB.delete(1.0, END)
 			self.textB.insert(1.0, 'Excel File -> SQL File Complete!\n\n')
 			self.textB.insert(END, self.info['ESSave'] + '\n\n')
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel Fiel -> SQL File Function.' + "%-69s" % ('[ ' + self.info['ESSave']) + ' ]\n')
 			f.close()
-			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
 				if len(lines) > 20:
 					for i in range(0, len(lines)-20):
@@ -227,7 +227,7 @@ class MSSQL:
 
 	def DB_ExcelFunction(self):
 		try:
-			wb = openpyxl.load_workbook('C:\\Users\\Secuve\\Desktop\\Database Tool\\history file\\history.xlsx')
+			wb = openpyxl.load_workbook(os.path.abspath('') + '\\history file\\history.xlsx')
 			sheetmkNew = wb.create_sheet()
 			sheetmkNew.title = self.info['DESheet']
 			sheetmkNew.column_dimensions['A'].width = 5
@@ -369,10 +369,10 @@ class MSSQL:
 			self.textB.delete(1.0, END)
 			self.textB.insert(1.0, 'DB Scheme -> Excel Complete!\n\n')
 			self.textB.insert(END, self.info['DEPath'] + '\n\n')
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tDB Scheme -> Excel File Function.' + "%-69s" % ('[ ' + self.info['DEPath']) + ' ]\n')
 			f.close()
-			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
 				if len(lines) > 20:
 					for i in range(0, len(lines)-20):
@@ -485,10 +485,10 @@ class MSSQL:
 			self.textB.delete(1.0, END)
 			self.textB.insert(1.0, 'DB Scheme -> SQL File Complete!\n\n')
 			self.textB.insert(END, self.info['DSPath'] + '\n\n')
-			f = open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'a')
+			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
 			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tDB Scheme -> SQL File Function.' + "%-69s" % ('[ ' + self.info['DSPath']) + ' ]\n')
 			f.close()
-			with open('C:\\Users\\Secuve\\Desktop\\Database Tool\\log\\log.txt', 'r') as f:
+			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
 				if len(lines) > 20:
 					for i in range(0, len(lines)-20):
