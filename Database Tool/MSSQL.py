@@ -175,7 +175,7 @@ class MSSQL:
 				self.textB.delete(1.0, END)
 				self.textB.insert(1.0, 'Excel File -> DB Scheme Complete!\n\n')
 				f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-				f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel File -> DB Scheme Function.' + "%-60s" % ('[ ' + self.info['Path']) + ' ]\n')
+				f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel File -> DB Scheme Function.' + "%-60s" % (self.info['Path']) + '\n')
 				f.close()
 				with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 					lines = f.readlines()
@@ -212,7 +212,7 @@ class MSSQL:
 			self.textB.insert(1.0, 'Excel File -> SQL File Complete!\n\n')
 			self.textB.insert(END, self.info['ESSave'] + '\n\n')
 			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel Fiel -> SQL File Function.' + "%-69s" % ('[ ' + self.info['ESSave']) + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tExcel Fiel -> SQL File Function.' + "%-60s" % (self.info['ESSave']) + '\n')
 			f.close()
 			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
@@ -252,10 +252,10 @@ class MSSQL:
 			sheetmkNew.cell(row=2, column=6).value = 'Y/N'
 
 			fontBold = Font(bold = True)
-			column_border_L = Border(left=Side(style='thick'))
-			column_border_R = Border(right=Side(style='thick'))
-			row_border_T = Border(top=Side(style='thick'))
-			row_border_B = Border(bottom=Side(style='thick'))
+			column_border_L = Border(left=Side(style='medium'))
+			column_border_R = Border(right=Side(style='medium'))
+			row_border_T = Border(top=Side(style='medium'))
+			row_border_B = Border(bottom=Side(style='medium'))
 
 			self.info['Cursor'].execute("SELECT NAME, (SELECT VALUE FROM SYS.EXTENDED_PROPERTIES WHERE MAJOR_ID = A.ID AND MINOR_ID = 0 ) COMMENT FROM SYSOBJECTS A WHERE RTRIM(A.XTYPE) = 'U' ORDER BY NAME")
 			tableComment = self.info['Cursor'].fetchall()
@@ -370,7 +370,7 @@ class MSSQL:
 			self.textB.insert(1.0, 'DB Scheme -> Excel Complete!\n\n')
 			self.textB.insert(END, self.info['DEPath'] + '\n\n')
 			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tDB Scheme -> Excel File Function.' + "%-69s" % ('[ ' + self.info['DEPath']) + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tDB Scheme -> Excel File Function.' + "%-60s" % (self.info['DEPath']) + '\n')
 			f.close()
 			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
@@ -486,7 +486,7 @@ class MSSQL:
 			self.textB.insert(1.0, 'DB Scheme -> SQL File Complete!\n\n')
 			self.textB.insert(END, self.info['DSPath'] + '\n\n')
 			f = open(os.path.abspath('') + '\\log\\log.txt', 'a')
-			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tDB Scheme -> SQL File Function.' + "%-69s" % ('[ ' + self.info['DSPath']) + ' ]\n')
+			f.write(self.datetime.strftime('[ %Y-%m-%d %H:%M:%S ]') + "%-40s" % '\t\tDB Scheme -> SQL File Function.' + "%-60s" % (self.info['DSPath']) + '\n')
 			f.close()
 			with open(os.path.abspath('') + '\\log\\log.txt', 'r') as f:
 				lines = f.readlines()
